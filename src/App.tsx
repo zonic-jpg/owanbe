@@ -26,6 +26,7 @@ import Shortlist from "./pages/Shortlist.tsx";
 import BrandOnboarding from "./pages/BrandOnboarding.tsx";
 import BrandDashboard from "./pages/BrandDashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
       <BrowserRouter basename={import.meta.env.BASE_URL}>
         <AuthProvider>
           <ShortlistProvider>
+            <ErrorBoundary label="OwanbeX">
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
@@ -61,6 +63,7 @@ const App = () => (
             </Routes>
             <ShortlistBar />
             <SiteFooter />
+            </ErrorBoundary>
           </ShortlistProvider>
         </AuthProvider>
       </BrowserRouter>

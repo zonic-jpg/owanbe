@@ -15,7 +15,8 @@ import {
   Star, MapPin, Mail, Phone, MessageCircle, BadgeCheck, Sparkles,
   ArrowLeft, Heart,
 } from "lucide-react";
-import { coverFor, tintFor } from "@/lib/vendor-covers";
+import { tintFor } from "@/lib/vendor-covers";
+import { CoverImage } from "@/components/CoverImage";
 import { ShortlistButton } from "@/components/ShortlistButton";
 import { trackVendorEvent } from "@/lib/analytics-track";
 
@@ -185,12 +186,13 @@ export default function VendorProfile() {
           const tint = tintFor(vendor.id);
           return (
             <div className="relative overflow-hidden rounded-2xl border bg-card">
-              <div
-                className="h-48 md:h-64 w-full bg-cover bg-center"
-                style={{
-                  backgroundImage: `url(${coverFor(vendor.category, vendor.cover_url, vendor.id)})`,
-                  filter: hasRealCover ? undefined : tint.filter,
-                }}
+              <CoverImage
+                category={vendor.category}
+                coverUrl={vendor.cover_url}
+                vendorId={vendor.id}
+                alt={`${vendor.name} cover`}
+                loading="eager"
+                className="h-48 md:h-64 w-full object-cover object-center"
               />
               {!hasRealCover && (
                 <div

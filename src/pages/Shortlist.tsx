@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Star, MapPin, X, Mail, Phone, MessageCircle, Heart } from "lucide-react";
-import { coverFor } from "@/lib/vendor-covers";
+import { CoverImage } from "@/components/CoverImage";
 
 type Vendor = {
   id: string;
@@ -164,10 +164,11 @@ function CategoryCompare({
             <Link to={`/vendors/${v.id}`}>
               <Card className="overflow-hidden h-full hover:shadow-lg transition-shadow">
                 <div className="aspect-[4/3] bg-muted overflow-hidden">
-                  <img
-                    src={coverFor(v.category, v.cover_url)}
+                  <CoverImage
+                    category={v.category}
+                    coverUrl={v.cover_url}
+                    vendorId={v.id}
                     alt={v.name}
-                    loading="lazy"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>

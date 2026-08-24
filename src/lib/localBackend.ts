@@ -88,10 +88,66 @@ function analyticsEvents(vendorId: string): Row[] {
   return rows;
 }
 
+const MOCK_CATEGORIES = [
+  "catering", "dj", "decor", "photography", "mc", "makeup", "aso_ebi", "cake",
+  "venue", "drinks", "security", "florist", "videographer", "lighting_av",
+  "bar_service", "planner", "rentals", "small_chops",
+] as const;
+
+function mockVendors(now: string): Row[] {
+  return MOCK_CATEGORIES.map((category, i) => ({
+    id: `mock-v-${String(i + 1).padStart(2, "0")}`,
+    name: `Mock ${category.replace(/_/g, " ")} — Lagos`,
+    category,
+    city: i % 3 === 0 ? "Abuja" : "Lagos",
+    is_approved: true,
+    price_band: i % 4 === 0 ? "premium" : "mid",
+    rating: 4.2 + (i % 8) * 0.1,
+    cover_status: "pending",
+    cover_attempts: 0,
+    origin: "mock",
+    retain: false,
+    bio: `Seeded mock vendor for ${category} QA.`,
+  }));
+}
+
+function mockCatalog(now: string, vendors: Row[]): Row[] {
+  return vendors.flatMap((v, i) => [
+    {
+      id: `mock-p-${String(i + 1).padStart(2, "0")}a`,
+      vendor_id: v.id,
+      name: `${v.name} — Standard`,
+      category: v.category,
+      unit_price: 150_000 + i * 25_000,
+      unit_label: "flat",
+      rating: v.rating,
+      is_active: true,
+      origin: "mock",
+      retain: false,
+      image_url: null,
+    },
+    {
+      id: `mock-p-${String(i + 1).padStart(2, "0")}b`,
+      vendor_id: v.id,
+      name: `${v.name} — Premium`,
+      category: v.category,
+      unit_price: 350_000 + i * 40_000,
+      unit_label: "flat",
+      rating: (v.rating as number) + 0.2,
+      is_active: true,
+      origin: "mock",
+      retain: false,
+      image_url: null,
+    },
+  ]);
+}
+
 function seed(): DB {
   const now = new Date().toISOString();
   const eventDate = new Date();
   eventDate.setMonth(eventDate.getMonth() + 3);
+  const mockVendorRows = mockVendors(now);
+  const mockProductRows = mockCatalog(now, mockVendorRows);
   return {
     profiles: Object.values(LOCAL_USERS).map((u) => ({
       id: u.id, full_name: u.name, city: "Lagos", created_at: now, updated_at: now,
@@ -160,12 +216,14 @@ function seed(): DB {
       rating: 4.8,
       cover_status: "done",
       cover_attempts: 1,
-    }],
+      origin: "live",
+      retain: false,
+    }, ...mockVendorRows],
     brand_vendors: [{ brand_id: BRAND_ID, vendor_id: VENDOR_ID, vendors: { id: VENDOR_ID, name: "Adunni Palace Hall", category: "venue" } }],
     catalog_products: [{
       id: PRODUCT_ID, vendor_id: VENDOR_ID, name: "Grand ballroom — 300 guests",
-      category: "venue", unit_price: 4_500_000, image_url: null,
-    }],
+      category: "venue", unit_price: 4_500_000, image_url: null, origin: "live", retain: false,
+    }, ...mockProductRows],
     vendor_analytics_events: analyticsEvents(VENDOR_ID),
     product_analytics_events: [
       { product_id: PRODUCT_ID, event_type: "view" },
@@ -184,10 +242,18 @@ function seed(): DB {
       method: "card", paid_at: now, external_ref: "ZONIC-1001", created_at: now,
     }],
     app_settings: [{
-      preview_mode: "live", published_mode: "live", demo_login_enabled: true, updated_at: now,
+      preview_mode: "mock", published_mode: "mock", demo_login_enabled: true, updated_at: now,
     }],
     landing_content: [],
-    cities: [{ name: "Lagos", is_active: true }, { name: "Abuja", is_active: true }],
+    cities: [
+      { name: "Lagos", is_active: true, origin: "mock", retain: false },
+      { name: "Abuja", is_active: true, origin: "mock", retain: false },
+      { name: "Port Harcourt", is_active: true, origin: "mock", retain: false },
+    ],
+    sponsors: [
+      { id: "mock-sp-1", name: "Mock Sponsor Gold", tier: "gold", is_active: true, origin: "mock", retain: false },
+      { id: "mock-sp-2", name: "Mock Sponsor Silver", tier: "silver", is_active: true, origin: "mock", retain: false },
+    ],
     ai_summaries: [{
       scope: "brand",
       ref_id: BRAND_ID,
@@ -413,7 +479,32 @@ export function handleLocalRequest(input: RequestInfo | URL, init?: RequestInit)
     if (fn === "set_preview_mode" || fn === "approve_preview" || fn === "set_demo_login_enabled") {
       return json(null);
     }
-    if (fn === "promote_retained_to_live" || fn === "purge_mock_data") return json(0);
+    if (fn === "promote_retained_to_live") {
+      let n = 0;
+      for (const table of Object.keys(store.db)) {
+        store.db[table] = store.db[table].map((row) => {
+          if (row.retain === true && row.origin === "mock") {
+            n++;
+            return { ...row, origin: "live" };
+          }
+          return row;
+        });
+      }
+      save(store);
+      return json(n);
+    }
+    if (fn === "purge_mock_data") {
+      const TABLES = ["catalog_products", "vendors", "vendor_portfolio", "sponsors", "cities", "service_price_config", "landing_content"];
+      let n = 0;
+      for (const table of TABLES) {
+        if (!store.db[table]) continue;
+        const before = store.db[table].length;
+        store.db[table] = store.db[table].filter((row) => row.origin !== "mock" || row.retain === true);
+        n += before - store.db[table].length;
+      }
+      save(store);
+      return json(n);
+    }
     return json({ ok: true });
   }
 

@@ -11,6 +11,7 @@ import { Star, Check, Sparkles, Trophy, Crown, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { prettyCategory } from "@/lib/vendor-categories";
 import { trackProductEvent } from "@/lib/catalog-track";
+import { track as zonicTrack } from "@/lib/zonic-track";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(n);
 
@@ -128,6 +129,10 @@ export function CategoryBrowser({ open, onOpenChange, category, eventId, guestCo
       return toast.error(error.message);
     }
     trackProductEvent(product.id, "select", eventId);
+    zonicTrack("event.product.selected", {
+      entity: { type: "catalog_product", id: product.id, category: product.category },
+      properties: { event_id: eventId, qty, unit_price: product.unit_price },
+    });
     toast.success(`${product.name} selected · totals updated`);
     onPicked();
     if (opts.closeAfter) {

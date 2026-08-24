@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { CATEGORY_GROUPS, prettyCategory } from "@/lib/vendor-categories";
 import { CategoryBrowser } from "@/components/CategoryBrowser";
 import { GateGuard } from "@/components/GateGuard";
+import { track as zonicTrack } from "@/lib/zonic-track";
 import { EventSummaryTable, SelectionRow } from "@/components/EventSummaryTable";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(n);
@@ -128,7 +129,13 @@ export default function EventDetail() {
                 {group.categories.map((cat) => {
                   const sel = selectionByCat.get(cat);
                   return (
-                    <button key={cat} onClick={() => setBrowserCat(cat)} className={`flex flex-col text-left rounded-lg border-2 p-3 transition-colors ${sel ? "border-primary/50 bg-primary/5" : "border-border hover:border-primary/40"}`}>
+                    <button key={cat} onClick={() => {
+                      setBrowserCat(cat);
+                      zonicTrack("event.category.open", {
+                        entity: { type: "event", id: id!, category: cat },
+                        properties: { category: cat },
+                      });
+                    }} className={`flex flex-col text-left rounded-lg border-2 p-3 transition-colors ${sel ? "border-primary/50 bg-primary/5" : "border-border hover:border-primary/40"}`}>
                       <div className="flex items-start justify-between gap-1">
                         <span className="text-sm font-semibold leading-tight">{prettyCategory(cat)}</span>
                         {sel && <Check className="w-4 h-4 text-primary flex-shrink-0" />}

@@ -13,6 +13,7 @@
 //      (up to DUP_RETRIES times) before accepting.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { decode as decodeJpeg } from "https://esm.sh/jpeg-js@0.4.4";
+import { imageBytesFromAiResponse } from "../_shared/image-bytes.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -247,33 +248,41 @@ async function generateImage(prompt: string): Promise<Uint8Array> {
   if (!AI_API_KEY) {
     throw new Error("AI image not configured (AI_API_KEY missing) — vendors fall back to bundled stock covers");
   }
-  const resp = await fetch(AI_IMAGE_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${AI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: AI_IMAGE_MODEL,
-      messages: [{ role: "user", content: prompt }],
-      modalities: ["image", "text"],
-    }),
-  });
-  if (!resp.ok) {
-    const t = await resp.text();
-    throw new Error(`AI image ${resp.status}: ${t.slice(0, 200)}`);
+  let lastErr = "AI image request failed";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 55_000);
+      const resp = await fetch(AI_IMAGE_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${AI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: AI_IMAGE_MODEL,
+          messages: [{ role: "user", content: prompt }],
+          modalities: ["image", "text"],
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      if (!resp.ok) {
+        const t = await resp.text();
+        throw new Error(`AI image ${resp.status}: ${t.slice(0, 200)}`);
+      }
+      const data = await resp.json();
+      return await imageBytesFromAiResponse(data);
+    } catch (e) {
+      lastErr = e instanceof Error ? e.message : String(e);
+      if (attempt === 0 && /abort|timeout|429|502|503|504/i.test(lastErr)) {
+        await new Promise((r) => setTimeout(r, 1200));
+        continue;
+      }
+      throw new Error(lastErr);
+    }
   }
-  const data = await resp.json();
-  const url: string | undefined =
-    data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-  if (!url || !url.startsWith("data:image")) {
-    throw new Error("No image returned");
-  }
-  const b64 = url.split(",", 2)[1];
-  const binary = atob(b64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
+  throw new Error(lastErr);
 }
 
 async function uploadCover(supabase: SupabaseAdmin, vendorId: string, bytes: Uint8Array): Promise<string> {

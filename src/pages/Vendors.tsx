@@ -11,7 +11,8 @@ import { Star, MapPin, Search, BadgeCheck, X, ChevronDown } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { coverForAt } from "@/lib/vendor-covers";
+import { CoverImage } from "@/components/CoverImage";
+import { track as zonicTrack } from "@/lib/zonic-track";
 import { ShortlistButton } from "@/components/ShortlistButton";
 import {
   CATEGORY_GROUPS,
@@ -71,6 +72,7 @@ export default function Vendors() {
   const [bands, setBands] = useState<string[]>([]);
 
   useEffect(() => {
+    zonicTrack("vendor.directory.view", { properties: { surface: "vendors" } });
     (async () => {
       setLoading(true);
       const { data, error } = await supabase
@@ -497,11 +499,13 @@ function VendorGrid({ vendors }: { vendors: Vendor[] }) {
             <Link to={`/vendors/${v.id}`} className="block">
               <Card className="overflow-hidden h-full hover:shadow-lg transition-shadow border-border/60">
                 <div className="aspect-[4/3] bg-muted relative overflow-hidden">
-                  <img
-                    src={coverForAt(v.category, v.cover_url, v.id, i)}
+                  <CoverImage
+                    category={v.category}
+                    coverUrl={v.cover_url}
+                    vendorId={v.id}
+                    index={i}
                     alt={`${prettyCategory(v.category)} — ${v.name}`}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
                   />
                   {/* Neutral gradient only for badge legibility — no colour/hue shift on the photo itself */}
                   <div aria-hidden className="absolute inset-x-0 bottom-0 h-16 pointer-events-none bg-gradient-to-t from-black/35 to-transparent" />

@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Sparkles, ArrowLeft, ArrowRight, Calendar, MapPin, Users, Wallet, Palette } from "lucide-react";
 import { toast } from "sonner";
+import { track as zonicTrack } from "@/lib/zonic-track";
 import { formatNairaCompact } from "@/lib/format";
 
 type EventType = "wedding" | "birthday" | "burial" | "housewarming" | "chieftaincy" | "anniversary" | "naming" | "other";
@@ -110,6 +111,10 @@ function EventNewInner() {
     }).select("id").single();
     setSaving(false);
     if (error || !data) return toast.error(error?.message ?? "Failed to create event");
+    zonicTrack("event.created", {
+      entity: { type: "event", id: data.id },
+      properties: { type: d.type, city: d.city, guest_count: d.guest_count },
+    });
     toast.success("Event created");
     navigate(`/events/${data.id}`);
   };

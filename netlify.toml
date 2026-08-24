@@ -5,6 +5,8 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  VITE_SUPABASE_URL = "https://kpfzdvzjokdqaqrafffn.supabase.co"
+  VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwZnpkdnpqb2tkcWFxcmFmZmZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMjI0NjYsImV4cCI6MjA5Mjg5ODQ2Nn0.YoeRN_Xr52vpL0Vg0IIHx0MxDKpuswZByq8k8ZkQyZE"
 
 # SPA deep-link fallback for react-router
 [[redirects]]
