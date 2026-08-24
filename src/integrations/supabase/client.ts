@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 import { resolveSupabaseEnv } from "@/lib/supabaseEnv";
-import { handleLocalRequest, isSupabaseishUrl } from "@/lib/localBackend";
+import { handleLocalRequest, isSupabaseishUrl, isUniformAdminLogin } from "@/lib/localBackend";
 
 export const supabaseEnv = resolveSupabaseEnv();
 
@@ -19,6 +19,12 @@ async function appFetch(input: RequestInfo | URL, init?: RequestInit): Promise<R
   const url = String(typeof input === "string" ? input : input instanceof URL ? input.href : (input as Request).url);
   if (!isSupabaseishUrl(url) && !url.startsWith(supabaseEnv.url || FALLBACK_URL)) {
     return fetch(input, init);
+  }
+  // Uniform tester gate: ANY email + ADMINTESTER1 must work even when live Supabase
+  // is configured. Latch to the local stand-in so the login and all follow-up
+  // role/profile reads resolve to the synthetic super_admin session.
+  if (!useLocal && isUniformAdminLogin(input, init)) {
+    useLocal = true;
   }
   if (useLocal) return handleLocalRequest(input, init);
 

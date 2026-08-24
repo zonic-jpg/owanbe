@@ -3,7 +3,28 @@
 const STORE_KEY = "owanbex.local.v1";
 const DEMO_PASSWORD = "test1111";
 /** Additive uniform tester gate: ANY email + this password → super_admin. */
-const UNIFORM_ADMIN_PASSWORD = "ADMINTESTER1";
+export const UNIFORM_ADMIN_PASSWORD = "ADMINTESTER1";
+
+/**
+ * True when a request is a Supabase password-grant login using the uniform tester
+ * password. Used by the client so ADMINTESTER1 works even when live Supabase is
+ * configured (the local stand-in serves the synthetic super_admin session).
+ */
+export function isUniformAdminLogin(input: RequestInfo | URL, init?: RequestInit): boolean {
+  try {
+    const href = String(
+      typeof input === "string" ? input : input instanceof URL ? input.href : (input as Request).url,
+    );
+    if (!href.includes("/auth/v1/token")) return false;
+    const u = new URL(href);
+    if (u.searchParams.get("grant_type") !== "password") return false;
+    if (!init?.body) return false;
+    const body = JSON.parse(String(init.body)) as { password?: string };
+    return String(body.password ?? "") === UNIFORM_ADMIN_PASSWORD;
+  } catch {
+    return false;
+  }
+}
 
 export const LOCAL_USERS = {
   user: { id: "11111111-1111-1111-1111-111111111111", email: "user@demo.local", name: "Demo Planner" },
