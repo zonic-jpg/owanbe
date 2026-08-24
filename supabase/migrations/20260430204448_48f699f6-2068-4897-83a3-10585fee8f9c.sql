@@ -1,0 +1,10 @@
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'planner';
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'florist';
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'videographer';
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'hair_stylist';
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'bridal_wear';
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'gele';
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'lighting_av';
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'transport';
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'stationery';
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'rentals';

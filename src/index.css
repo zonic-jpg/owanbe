@@ -1,0 +1,252 @@
+/* Apple uses San Francisco (SF Pro), which is served only on Apple devices.
+   We use the same -apple-system stack Apple's own sites use, falling back to
+   Helvetica Neue on non-Apple platforms. No webfont import needed. */
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =========================================================
+   Owanbe Planner — Design System
+   Rich Owanbe Luxury: deep gold, royal burgundy, ivory, charcoal
+   All colors HSL.
+   ========================================================= */
+
+@layer base {
+  :root {
+    /* Brand */
+    --background: 36 33% 97%;           /* ivory */
+    --foreground: 25 20% 12%;           /* near-black warm */
+
+    --card: 0 0% 100%;
+    --card-foreground: 25 20% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 25 20% 12%;
+
+    --primary: 43 65% 47%;              /* deep owanbe gold */
+    --primary-foreground: 25 30% 10%;
+    --primary-glow: 45 88% 65%;
+
+    --secondary: 350 55% 28%;           /* royal burgundy */
+    --secondary-foreground: 36 33% 97%;
+
+    --muted: 36 18% 92%;
+    --muted-foreground: 25 12% 38%;
+
+    --accent: 350 55% 28%;
+    --accent-foreground: 36 33% 97%;
+
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 36 33% 97%;
+
+    --border: 36 20% 86%;
+    --input: 36 20% 86%;
+    --ring: 43 65% 47%;
+
+    --rust: 16 70% 42%;                 /* warm rust accent */
+    --rust-foreground: 36 33% 97%;
+
+    --radius: 0.75rem;
+
+    /* Gradients */
+    --gradient-gold: linear-gradient(135deg, hsl(43 70% 52%) 0%, hsl(45 88% 65%) 50%, hsl(40 60% 40%) 100%);
+    --gradient-royal: linear-gradient(135deg, hsl(350 55% 28%) 0%, hsl(355 60% 35%) 100%);
+    --gradient-luxe: linear-gradient(135deg, hsl(43 65% 47%) 0%, hsl(350 55% 28%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(25 20% 12% / 0) 0%, hsl(25 20% 12% / 0.85) 100%);
+    --gradient-section: linear-gradient(180deg, hsl(36 33% 97%) 0%, hsl(36 30% 94%) 100%);
+
+    /* Shadows */
+    --shadow-gold: 0 20px 60px -20px hsl(43 65% 47% / 0.45);
+    --shadow-elegant: 0 30px 80px -30px hsl(25 20% 12% / 0.25);
+    --shadow-soft: 0 4px 20px -4px hsl(25 20% 12% / 0.08);
+
+    /* Tier accents */
+    --tier-gold: 43 65% 47%;
+    --tier-platinum: 220 8% 65%;
+    --tier-diamond: 280 40% 45%;
+
+    --sidebar-background: 25 20% 10%;
+    --sidebar-foreground: 36 33% 92%;
+    --sidebar-primary: 43 65% 47%;
+    --sidebar-primary-foreground: 25 30% 10%;
+    --sidebar-accent: 25 18% 16%;
+    --sidebar-accent-foreground: 36 33% 92%;
+    --sidebar-border: 25 18% 18%;
+    --sidebar-ring: 43 65% 47%;
+  }
+
+  .dark {
+    --background: 25 20% 8%;
+    --foreground: 36 33% 95%;
+
+    --card: 25 18% 12%;
+    --card-foreground: 36 33% 95%;
+
+    --popover: 25 18% 12%;
+    --popover-foreground: 36 33% 95%;
+
+    --primary: 43 70% 55%;
+    --primary-foreground: 25 30% 10%;
+    --primary-glow: 45 88% 70%;
+
+    --secondary: 350 50% 35%;
+    --secondary-foreground: 36 33% 95%;
+
+    --muted: 25 18% 16%;
+    --muted-foreground: 36 15% 65%;
+
+    --accent: 350 50% 35%;
+    --accent-foreground: 36 33% 95%;
+
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 36 33% 95%;
+
+    --border: 25 18% 20%;
+    --input: 25 18% 20%;
+    --ring: 43 70% 55%;
+
+    --rust: 16 75% 50%;
+    --rust-foreground: 36 33% 95%;
+
+    --gradient-section: linear-gradient(180deg, hsl(25 20% 8%) 0%, hsl(25 20% 11%) 100%);
+
+    --sidebar-background: 25 22% 6%;
+    --sidebar-foreground: 36 33% 92%;
+    --sidebar-primary: 43 70% 55%;
+    --sidebar-primary-foreground: 25 30% 10%;
+    --sidebar-accent: 25 20% 12%;
+    --sidebar-accent-foreground: 36 33% 92%;
+    --sidebar-border: 25 20% 14%;
+    --sidebar-ring: 43 70% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scrollbar-gutter: stable;       /* reserve the scrollbar so pages never jump sideways */
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "ss01", "cv02", "cv11";
+    overflow-x: hidden;             /* kill horizontal wobble from full-bleed children */
+    overscroll-behavior-y: none;    /* stop rubber-band content shift */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Stop flex/grid children from forcing the page wider than the viewport,
+     which is the usual cause of the "wobble" on scroll. */
+  * {
+    min-width: 0;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight;
+  }
+}
+
+@layer utilities {
+  .text-gradient-gold {
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .text-gradient-luxe {
+    background: var(--gradient-luxe);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .bg-gradient-gold { background: var(--gradient-gold); }
+  .bg-gradient-royal { background: var(--gradient-royal); }
+  .bg-gradient-luxe { background: var(--gradient-luxe); }
+  .bg-gradient-section { background: var(--gradient-section); }
+
+  .shadow-gold { box-shadow: var(--shadow-gold); }
+  .shadow-elegant { box-shadow: var(--shadow-elegant); }
+  .shadow-soft { box-shadow: var(--shadow-soft); }
+
+  /* Subtle ankara-inspired diamond pattern divider */
+  .ankara-divider {
+    background-image:
+      linear-gradient(45deg, hsl(var(--primary) / 0.15) 25%, transparent 25%),
+      linear-gradient(-45deg, hsl(var(--primary) / 0.15) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, hsl(var(--primary) / 0.15) 75%),
+      linear-gradient(-45deg, transparent 75%, hsl(var(--primary) / 0.15) 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .text-balance { text-wrap: balance; }
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up { animation: fade-up 0.6s ease-out both; }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .animate-shimmer {
+    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.2), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2.5s infinite;
+  }
+
+  /* Apple-style display typography */
+  .font-apple {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    letter-spacing: -0.022em;
+    font-weight: 600;
+  }
+  .font-apple-tight {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    letter-spacing: -0.035em;
+    font-weight: 700;
+  }
+
+  /* Apple-style scroll reveal */
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .animate-scale-in { animation: scale-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+  /* =========================================================
+     Responsive image frames
+     Drives <ResponsiveImage /> aspect-ratio per breakpoint via
+     CSS variables — never stretches, never collapses, and
+     guarantees the frame keeps shape during image load.
+     ========================================================= */
+  .responsive-img {
+    aspect-ratio: var(--ar-base, 4 / 5);
+  }
+  @media (min-width: 640px) {
+    .responsive-img { aspect-ratio: var(--ar-sm, var(--ar-base, 4 / 5)); }
+  }
+  @media (min-width: 768px) {
+    .responsive-img { aspect-ratio: var(--ar-md, var(--ar-sm, var(--ar-base, 4 / 5))); }
+  }
+  @media (min-width: 1024px) {
+    .responsive-img { aspect-ratio: var(--ar-lg, var(--ar-md, var(--ar-sm, var(--ar-base, 4 / 5)))); }
+  }
+  @media (min-width: 1280px) {
+    .responsive-img { aspect-ratio: var(--ar-xl, var(--ar-lg, var(--ar-md, var(--ar-sm, var(--ar-base, 4 / 5))))); }
+  }
+}

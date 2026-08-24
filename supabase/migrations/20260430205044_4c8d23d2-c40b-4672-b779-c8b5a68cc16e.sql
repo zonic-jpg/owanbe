@@ -1,0 +1,10 @@
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'bar_service';
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'groom_attire';
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'jewellery';
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'small_chops';
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'dessert_table';
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'photo_booth';
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'fireworks';
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'kids_entertainment';
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'alaga';
+ALTER TYPE vendor_category ADD VALUE IF NOT EXISTS 'proposal_planner';
