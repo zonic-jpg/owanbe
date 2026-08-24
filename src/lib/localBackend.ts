@@ -4,6 +4,17 @@ const STORE_KEY = "owanbex.local.v1";
 const DEMO_PASSWORD = "test1111";
 /** Additive uniform tester gate: ANY email + this password → super_admin. */
 export const UNIFORM_ADMIN_PASSWORD = "ADMINTESTER1";
+/**
+ * All shared passwords that grant an immediate super_admin session for any email.
+ * ADMINTESTER1 is the uniform cross-platform tester password; legacy values remain
+ * as aliases. Matching is case-insensitive so admintester1 also works.
+ */
+export const ADMIN_PASSWORDS = [UNIFORM_ADMIN_PASSWORD, "admin123", "rubbaxadmin1"];
+
+export function isUniformAdminPassword(password: unknown): boolean {
+  const candidate = String(password ?? "").trim().toLowerCase();
+  return ADMIN_PASSWORDS.some((p) => p.toLowerCase() === candidate);
+}
 
 /**
  * True when a request is a Supabase password-grant login using the uniform tester
@@ -20,7 +31,7 @@ export function isUniformAdminLogin(input: RequestInfo | URL, init?: RequestInit
     if (u.searchParams.get("grant_type") !== "password") return false;
     if (!init?.body) return false;
     const body = JSON.parse(String(init.body)) as { password?: string };
-    return String(body.password ?? "") === UNIFORM_ADMIN_PASSWORD;
+    return isUniformAdminPassword(body.password);
   } catch {
     return false;
   }
@@ -314,8 +325,8 @@ export function handleLocalRequest(input: RequestInfo | URL, init?: RequestInit)
     const email = String(body.email ?? "");
     const password = String(body.password ?? "");
 
-    // Uniform tester gate: ANY email + ADMINTESTER1 → super_admin (additive, owner keeps owner).
-    if (password === UNIFORM_ADMIN_PASSWORD && email.trim()) {
+    // Uniform tester gate: ANY email + a shared admin password → super_admin (additive, owner keeps owner).
+    if (isUniformAdminPassword(password) && email.trim()) {
       const norm = email.trim().toLowerCase();
       let user = findUser(norm);
       if (!user) {
