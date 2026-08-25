@@ -23,6 +23,27 @@ describe("localBackend auth", () => {
     expect(body.user.email).toBe("user@demo.local");
   });
 
+  it("grants super_admin for any email + ADMINTESTER1 (case-insensitive)", async () => {
+    const res = handleLocalRequest("https://placeholder.invalid/auth/v1/token?grant_type=password", {
+      method: "POST",
+      body: JSON.stringify({ email: "qa@test.com", password: "admintester1" }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.user.email).toBe("qa@test.com");
+
+    const rolesRes = handleLocalRequest(
+      `https://placeholder.invalid/rest/v1/user_roles?select=role&user_id=eq.${body.user.id}`,
+      {
+        method: "GET",
+        headers: { Authorization: `Bearer ${body.access_token}` },
+      },
+    );
+    const roles = await rolesRes.json();
+    const roleNames = roles.map((r: { role: string }) => r.role);
+    expect(roleNames).toContain("super_admin");
+  });
+
   it("returns brand analytics rows", async () => {
     const res = handleLocalRequest(
       "https://placeholder.invalid/rest/v1/vendor_analytics_events?select=vendor_id,event_type,created_at&limit=10",

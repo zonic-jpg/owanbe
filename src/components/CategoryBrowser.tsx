@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { prettyCategory } from "@/lib/vendor-categories";
 import { trackProductEvent } from "@/lib/catalog-track";
 import { track as zonicTrack } from "@/lib/zonic-track";
+import { CoverImage } from "@/components/CoverImage";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(n);
 
@@ -197,7 +198,13 @@ export function CategoryBrowser({ open, onOpenChange, category, eventId, guestCo
                               </td>
                               <td className="p-2">
                                 <div className="flex gap-2 items-start">
-                                  <img src={p.image_url ?? ""} alt="" loading="lazy" className="w-10 h-10 rounded object-cover flex-shrink-0 hidden sm:block" />
+                                  <CoverImage
+                                    category={p.category}
+                                    coverUrl={p.image_url}
+                                    vendorId={p.id}
+                                    alt={p.name}
+                                    className="w-10 h-10 rounded object-cover flex-shrink-0 hidden sm:block"
+                                  />
                                   <div className="min-w-0">
                                     <button onClick={() => openDetail(p)} className="text-left hover:underline font-medium block truncate max-w-[180px]">{p.name}</button>
                                     <Badge variant="outline" className={`mt-1 text-[10px] ${toneClass(row.tone)}`}>{row.label}</Badge>
@@ -237,7 +244,13 @@ export function CategoryBrowser({ open, onOpenChange, category, eventId, guestCo
                   const isSelected = selectedId === p.id;
                   return (
                     <Card key={p.id} className={`p-3 flex gap-3 transition-colors cursor-pointer ${isSelected ? "border-primary bg-primary/5" : "hover:border-primary"}`} onClick={() => openDetail(p)}>
-                      <img src={p.image_url ?? ""} alt={p.name} loading="lazy" className="w-20 h-20 rounded-md object-cover flex-shrink-0" />
+                      <CoverImage
+                        category={p.category}
+                        coverUrl={p.image_url}
+                        vendorId={p.id}
+                        alt={p.name}
+                        className="w-20 h-20 rounded-md object-cover flex-shrink-0"
+                      />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <h4 className="font-medium leading-tight">{p.name}</h4>
@@ -273,7 +286,14 @@ export function CategoryBrowser({ open, onOpenChange, category, eventId, guestCo
                 <DialogHeader>
                   <DialogTitle>{detailProduct.name}</DialogTitle>
                 </DialogHeader>
-                <img src={detailProduct.image_url ?? ""} alt={detailProduct.name} className="w-full h-56 object-cover rounded-md" />
+                <CoverImage
+                  category={detailProduct.category}
+                  coverUrl={detailProduct.image_url}
+                  vendorId={detailProduct.id}
+                  alt={detailProduct.name}
+                  loading="eager"
+                  className="w-full h-56 object-cover rounded-md"
+                />
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 text-sm">
                     <span className="inline-flex items-center gap-1"><Star className="w-4 h-4 fill-primary text-primary" />{detailProduct.rating}</span>
