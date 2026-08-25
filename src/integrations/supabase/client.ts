@@ -10,6 +10,18 @@ const FALLBACK_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.placeholder";
 
 let useLocal = !supabaseEnv.configured;
 
+/** Switch all subsequent Supabase traffic to the seeded local stand-in. */
+export function latchToLocalBackend(reason?: string): void {
+  if (!useLocal) {
+    console.warn("[supabase] switching to local stand-in", reason ?? "");
+    useLocal = true;
+  }
+}
+
+export function isLocalBackendActive(): boolean {
+  return useLocal;
+}
+
 function looksNetworkFail(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
   return /failed to fetch|network|abort|load failed|timeout/i.test(msg);

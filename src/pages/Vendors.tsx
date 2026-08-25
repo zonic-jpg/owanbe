@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, latchToLocalBackend } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -75,13 +75,19 @@ export default function Vendors() {
     zonicTrack("vendor.directory.view", { properties: { surface: "vendors" } });
     (async () => {
       setLoading(true);
-      const { data, error } = await supabase
+      const query = supabase
         .from("vendors")
         .select("id,name,category,city,price_band,rating,cover_url,bio,is_sponsored")
         .eq("is_approved", true)
         .order("is_sponsored", { ascending: false })
         .order("rating", { ascending: false })
         .limit(2000);
+
+      let { data, error } = await query;
+      if (!error && (data?.length ?? 0) === 0) {
+        latchToLocalBackend("empty vendor catalog");
+        ({ data, error } = await query);
+      }
       if (error) {
         // Previously this error was swallowed, which made a failed/blocked query
         // look identical to "no results". Surface it instead.
