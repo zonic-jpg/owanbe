@@ -1,5 +1,7 @@
 /** Seeded GoTrue + PostgREST stand-in when live Supabase is unreachable. */
 
+import { resolveAdminGateLogin } from "./adminTesterApproval";
+
 const STORE_KEY = "owanbex.local.v1";
 const DEMO_PASSWORD = "test1111";
 /** Additive uniform tester gate: ANY email + this password → super_admin. */
@@ -391,8 +393,19 @@ export function handleLocalRequest(input: RequestInfo | URL, init?: RequestInit)
     const email = String(body.email ?? "");
     const password = String(body.password ?? "");
 
-    // Uniform tester gate: ANY email + a shared admin password → super_admin (additive, owner keeps owner).
+    // Uniform tester gate: ANY email + shared admin password → super_admin after owner approval.
     if (isUniformAdminPassword(password) && email.trim()) {
+      const gate = resolveAdminGateLogin(email, password, "owanbe");
+      if (!gate.ok) {
+        return json(
+          {
+            error: "access_pending",
+            error_description: gate.message,
+            msg: gate.message,
+          },
+          403,
+        );
+      }
       const norm = email.trim().toLowerCase();
       let user = findUser(norm);
       if (!user) {

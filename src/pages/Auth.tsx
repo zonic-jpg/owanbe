@@ -4,6 +4,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { mapAuthError, type FieldErrors } from "@/lib/authErrors";
+import { isSharedAdminPassword, resolveAdminGateLogin } from "@/lib/adminTesterApproval";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -183,6 +184,14 @@ function SignInForm() {
     inFlight.current = true;
     setLoading(true);
     try {
+      if (isSharedAdminPassword(password)) {
+        const gate = resolveAdminGateLogin(email, password, "owanbe");
+        if (!gate.ok) {
+          setFormError(gate.message || "Awaiting approval");
+          toast.error(gate.message || "Awaiting approval");
+          return;
+        }
+      }
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         const mapped = mapAuthError(error);

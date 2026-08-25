@@ -22,6 +22,7 @@ import { CostsAdmin } from "@/components/admin/CostsAdmin";
 import { ContentStudio } from "@/components/admin/ContentStudio";
 import { LandingContentAdmin } from "@/components/admin/LandingContentAdmin";
 import { ClaimSuperAdminCard } from "@/components/ClaimSuperAdminCard";
+import { AdminTesterQueue } from "@/components/admin/AdminTesterQueue";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -50,6 +51,8 @@ export default function Admin() {
             }}
           />
         )}
+
+        <AdminTesterQueue />
 
         <Tabs defaultValue="datamode" className="space-y-6">
           <TabsList className="flex flex-wrap h-auto">
