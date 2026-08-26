@@ -22,7 +22,7 @@ export function AdminTesterQueue() {
   if (!isFoundingOwner && actor.toLowerCase() !== OWNER_EMAIL) return null;
 
   return (
-    <Card className="border-amber-200" key={tick}>
+    <Card id="admintester-queue" className="border-amber-200 scroll-mt-24" key={tick}>
       <CardHeader>
         <CardTitle className="text-lg">ADMINTESTER approvals</CardTitle>
         <p className="text-sm text-muted-foreground">{AWAITING_MSG}</p>

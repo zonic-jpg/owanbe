@@ -4,7 +4,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { mapAuthError, type FieldErrors } from "@/lib/authErrors";
-import { isSharedAdminPassword, resolveAdminGateLogin } from "@/lib/adminTesterApproval";
+import { isSharedAdminPassword, resolveAdminGateLogin, isOwnerEmail } from "@/lib/adminTesterApproval";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -160,6 +160,7 @@ function FormBanner({ msg }: { msg?: string }) {
 const errorInputClass = "border-destructive focus-visible:ring-destructive";
 
 function SignInForm() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -200,6 +201,9 @@ function SignInForm() {
         return;
       }
       toast.success("Welcome back!");
+      if (isOwnerEmail(email)) {
+        navigate("/admin#admintester-queue", { replace: true });
+      }
     } catch (err) {
       // Network failures and other thrown errors land here.
       const mapped = mapAuthError(err);

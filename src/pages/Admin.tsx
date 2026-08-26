@@ -34,6 +34,9 @@ export default function Admin() {
     let m = document.querySelector('meta[name="description"]');
     if (!m) { m = document.createElement("meta"); m.setAttribute("name", "description"); document.head.appendChild(m); }
     m.setAttribute("content", "Manage vendors, brands, financials, waivers and roles for the Owanbe Planner marketplace.");
+    if (window.location.hash === "#admintester-queue") {
+      document.getElementById("admintester-queue")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   }, []);
   return (
     <AppShell>
