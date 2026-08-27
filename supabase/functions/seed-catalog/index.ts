@@ -17,8 +17,38 @@ type Seed = {
   image_keyword: string;
 };
 
-// Helper: stable, always-available image URL
-const img = (slug: string) => `https://picsum.photos/seed/owanbe-${slug}/800/600`;
+// Helper: African event / celebration photography (Unsplash, royalty-free)
+const OWANBE_IMAGES: Record<string, string> = {
+  planner: "photo-1519741497674-611481863552",
+  proposal: "photo-1511285560929-80b456fea0bc",
+  mc: "photo-1519225421980-715cb0215aed",
+  alaga: "photo-1465495976277-4387d4b0b4c6",
+  venue: "photo-1519167758481-83f550bb49b8",
+  rentals: "photo-1464366400600-7168b8d9d6bd",
+  logistics: "photo-1522673600700-279dd2f50337",
+  transport: "photo-1558618666-fcd25c85cd64",
+  security: "photo-1522673600700-279dd2f50337",
+  catering: "photo-1555939594-58d7cb561ad1",
+  cake: "photo-1464349095430-e847a1521986",
+  drinks: "photo-1514362545857-3bc1654d0a04",
+  decor: "photo-1478146896989-b5916d645276",
+  flowers: "photo-1492684223066-81342ee5ff30",
+  photo: "photo-1511285560929-80b456fea0bc",
+  video: "photo-1492691527719-9d1e072312ec",
+  dj: "photo-1571266028247-e4733b01795e",
+  band: "photo-1493225457124-a3eb161ffa5f",
+  asoebi: "photo-1617137968427-85924c800a22",
+  makeup: "photo-1522335789203-aabd1fc54bc9",
+  hair: "photo-1522337360788-8b13dee7a37e",
+  fashion: "photo-1595777457583-faa945f5f948",
+  gifts: "photo-1513885535751-8b9238bd345a",
+  default: "photo-1591604466374-42e045186142",
+};
+const img = (slug: string) => {
+  const prefix = slug.split("-")[0] ?? "default";
+  const photoId = OWANBE_IMAGES[prefix] ?? OWANBE_IMAGES.default;
+  return `https://images.unsplash.com/${photoId}?auto=format&fit=crop&w=800&h=600&q=80`;
+};
 
 export const CATALOG: Record<string, Seed[]> = {
   // PLANNING & COORDINATION
