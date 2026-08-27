@@ -1,15 +1,27 @@
-# OwanbeX auth
+# OwanbeX auth — Zonic orbit standard (5 rules)
 
-Orbit standard: [MyYangaX AUTH.md](https://github.com/zonic-jpg/myyangax/blob/main/AUTH.md)
+See MyYangaX `AUTH.md` for the full orbit standard.
 
-## ADMINTESTER approval
+## Rule 1 — Owner always in
 
-Passwords (case-insensitive): `ADMINTESTER1`, `admin123`, `rubbaxadmin1`
+`oadeagbo@gmail.com` → founding owner + super_admin immediately. Never pending.
 
-- First login → **PENDING** (clear “Awaiting approval” message)
-- Owner queue: Admin panel → **ADMINTESTER approvals**
-- Module: `src/lib/adminTesterApproval.ts`
+## Rule 2 — ADMINTESTER queue
 
-## Owner
+Any other email + admin password → **PENDING** with awaiting-approval message.
 
-- `oadeagbo@gmail.com` — never pending
+## Rule 3 — Owner queue on login
+
+Owner login → `/admin#admintester-queue`.
+
+## Rule 4 — Approved = full access
+
+Approved testers receive super_admin + full admin permissions.
+
+## Rule 5 — Owner allocates rights
+
+Owner manages roles, payment gates, and admin perms in Admin panel.
+
+## Module
+
+`src/lib/adminTesterApproval.ts` · local stand-in: `src/lib/localBackend.ts`

@@ -34,6 +34,17 @@ export function mapAuthError(
   if (code === "email_not_confirmed" || msg.includes("email not confirmed")) {
     return { fields: { email: "This email hasn't been verified yet — resend the verification link below." } };
   }
+  if (
+    code === "access_pending" ||
+    msg.includes("access_pending") ||
+    msg.includes("awaiting approval")
+  ) {
+    const pending =
+      (err as { error_description?: string })?.error_description ||
+      (err as { msg?: string })?.msg ||
+      "Awaiting approval — the owner must approve your admin access before you can sign in.";
+    return { fields: {}, form: pending };
+  }
   if (msg.includes("invalid login") || msg.includes("invalid credentials") || code === "invalid_credentials") {
     return {
       fields: { password: "Email or password is incorrect." },
