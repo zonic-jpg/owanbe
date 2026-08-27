@@ -37,7 +37,7 @@ const OWANBE_IMAGES: Record<string, string> = {
   video: "photo-1492691527719-9d1e072312ec",
   dj: "photo-1571266028247-e4733b01795e",
   band: "photo-1493225457124-a3eb161ffa5f",
-  asoebi: "photo-1617137968427-85924c800a22",
+  asoebi: "photo-1595777457583-faa945f5f948",
   makeup: "photo-1522335789203-aabd1fc54bc9",
   hair: "photo-1522337360788-8b13dee7a37e",
   fashion: "photo-1595777457583-faa945f5f948",
