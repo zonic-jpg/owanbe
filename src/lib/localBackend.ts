@@ -40,9 +40,9 @@ export function isUniformAdminLogin(input: RequestInfo | URL, init?: RequestInit
 }
 
 export const LOCAL_USERS = {
-  user: { id: "11111111-1111-1111-1111-111111111111", email: "user@demo.local", name: "Demo Planner" },
+  user: { id: "11111111-1111-1111-1111-111111111111", email: "user@demo.local", name: "Adunni Ogunleye" },
   brand: { id: "22222222-2222-2222-2222-222222222222", email: "brand@demo.local", name: "Adunni Events" },
-  admin: { id: "33333333-3333-3333-3333-333333333333", email: "admin@demo.local", name: "Demo Admin" },
+  admin: { id: "33333333-3333-3333-3333-333333333333", email: "admin@demo.local", name: "Chidi Okonkwo" },
   owner: { id: "44444444-4444-4444-4444-444444444444", email: "oadeagbo@gmail.com", name: "Founding Owner" },
 } as const;
 
@@ -96,21 +96,46 @@ const MOCK_CATEGORIES = [
   "bar_service", "planner", "rentals", "small_chops",
 ] as const;
 
+const MOCK_VENDOR_NAMES: Record<(typeof MOCK_CATEGORIES)[number], string[]> = {
+  catering: ["Amala Spot Catering", "Jollof Royale", "Suya Masters Lagos"],
+  dj: ["DJ Obi Live", "Spin Doctor Lagos", "DJ Tito & Crew"],
+  decor: ["Golden Petals Décor", "Aso Ebi Studio", "Royal Bloom Events"],
+  photography: ["Lens & Lace Studio", "Adewale Photography", "Moments by Kemi"],
+  mc: ["MC Wale Alabi", "Anchor Folake", "MC Tunde Speaks"],
+  makeup: ["Glam by Chioma", "Beat by Adunni", "Ngozi Beauty Bar"],
+  aso_ebi: ["Ankara House Lagos", "Aso Oke Collective", "Fabric & Gele Co."],
+  cake: ["Sweet Crumbs NG", "Cake Affairs Abuja", "Butter & Bloom"],
+  venue: ["Victoria Crown Hall", "Eko Banquet Gardens", "Grand Ikeja Suites"],
+  drinks: ["Palm Wine & Chill", "Champagne Haus NG", "Cocktail Yard Lagos"],
+  security: ["SecureGuard Events", "Shield Pro Nigeria", "Elite Event Security"],
+  florist: ["Bloom & Vine Lagos", "Petals by Yemi", "Flora Haus Abuja"],
+  videographer: ["Reel Kings NG", "Frame Story Studios", "Cinematic Tunde"],
+  lighting_av: ["Luxe AV Lagos", "Spotlight Nigeria", "Sound & Beam Co."],
+  bar_service: ["Mix Masters Lagos", "The Palm Bar Co.", "Premium Pour NG"],
+  planner: ["Owanbe Planners Co.", "Events by Folake", "Lagos Luxe Planners"],
+  rentals: ["Chair & Table NG", "Elite Rentals Lagos", "Event Furnish Co."],
+  small_chops: ["Small Chops Express", "Chop House Lagos", "Party Bites NG"],
+};
+
 function mockVendors(now: string): Row[] {
-  return MOCK_CATEGORIES.map((category, i) => ({
-    id: `mock-v-${String(i + 1).padStart(2, "0")}`,
-    name: `Mock ${category.replace(/_/g, " ")} — Lagos`,
-    category,
-    city: i % 3 === 0 ? "Abuja" : "Lagos",
-    is_approved: true,
-    price_band: i % 4 === 0 ? "premium" : "mid",
-    rating: 4.2 + (i % 8) * 0.1,
-    cover_status: "pending",
-    cover_attempts: 0,
-    origin: "mock",
-    retain: false,
-    bio: `Seeded mock vendor for ${category} QA.`,
-  }));
+  return MOCK_CATEGORIES.map((category, i) => {
+    const names = MOCK_VENDOR_NAMES[category];
+    const name = names[i % names.length];
+    return {
+      id: `mock-v-${String(i + 1).padStart(2, "0")}`,
+      name: `${name} — ${i % 3 === 0 ? "Abuja" : "Lagos"}`,
+      category,
+      city: i % 3 === 0 ? "Abuja" : "Lagos",
+      is_approved: true,
+      price_band: i % 4 === 0 ? "premium" : "mid",
+      rating: 4.2 + (i % 8) * 0.1,
+      cover_status: "pending",
+      cover_attempts: 0,
+      origin: "mock",
+      retain: false,
+      bio: `Trusted ${category.replace(/_/g, " ")} partner for Nigerian celebrations.`,
+    };
+  });
 }
 
 function mockCatalog(now: string, vendors: Row[]): Row[] {
@@ -253,8 +278,8 @@ function seed(): DB {
       { name: "Port Harcourt", is_active: true, origin: "mock", retain: false },
     ],
     sponsors: [
-      { id: "mock-sp-1", name: "Mock Sponsor Gold", tier: "gold", is_active: true, origin: "mock", retain: false },
-      { id: "mock-sp-2", name: "Mock Sponsor Silver", tier: "silver", is_active: true, origin: "mock", retain: false },
+      { id: "mock-sp-1", name: "Guinness Nigeria", tier: "gold", is_active: true, origin: "mock", retain: false },
+      { id: "mock-sp-2", name: "MTN Nigeria", tier: "silver", is_active: true, origin: "mock", retain: false },
     ],
     ai_summaries: [{
       scope: "brand",

@@ -487,9 +487,9 @@ const DEMO_PASSWORD = "test1111";
 type DemoRole = "user" | "brand" | "admin";
 
 const DEMO_ACCOUNTS: Record<DemoRole, { email: string; name: string; dest: string }> = {
-  user: { email: "user@demo.local", name: "Demo Planner", dest: "/dashboard" },
-  brand: { email: "brand@demo.local", name: "Demo Brand", dest: "/brand" },
-  admin: { email: "admin@demo.local", name: "Demo Admin", dest: "/admin" },
+  user: { email: "user@demo.local", name: "Adunni Ogunleye", dest: "/dashboard" },
+  brand: { email: "brand@demo.local", name: "Adunni Events", dest: "/brand" },
+  admin: { email: "admin@demo.local", name: "Chidi Okonkwo", dest: "/admin" },
 };
 
 // Three one-tap tester logins. Always shown so testers never get stuck behind
