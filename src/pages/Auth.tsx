@@ -54,14 +54,7 @@ export default function Auth() {
     navigate(from.startsWith("/auth") || from.startsWith("/login") ? "/dashboard" : from, { replace: true });
   }, [user, loading, from, navigate, location.pathname]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <Loader2 className="w-6 h-6 animate-spin text-neutral-400" aria-label="Loading" />
-      </div>
-    );
-  }
-
+  // Always render the auth UI — never blank the page behind a hanging getSession.
   return (
     <div className="min-h-screen flex flex-col bg-white text-neutral-900 font-apple">
       <div className="flex-1 grid lg:grid-cols-2">

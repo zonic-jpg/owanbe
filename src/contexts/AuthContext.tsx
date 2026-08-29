@@ -90,7 +90,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       });
 
-    return () => subscription.unsubscribe();
+    // Hard cap: never leave the app on a blank spinner if getSession hangs.
+    const cap = window.setTimeout(() => setLoading(false), 4_000);
+
+    return () => {
+      window.clearTimeout(cap);
+      subscription.unsubscribe();
+    };
   }, [syncSessionAccess]);
 
   const refreshRoles = async () => {

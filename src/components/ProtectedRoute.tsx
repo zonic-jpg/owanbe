@@ -12,9 +12,10 @@ export function ProtectedRoute({ children, requireAdmin = false, requireSuperAdm
 
   if (loading) {
     return (
-      <div className="container py-12 space-y-4">
+      <div className="container py-12 space-y-4" aria-busy="true" aria-label="Loading account">
         <Skeleton className="h-12 w-1/3" />
         <Skeleton className="h-64 w-full" />
+        <p className="text-sm text-muted-foreground pt-2">Loading your workspace…</p>
       </div>
     );
   }
