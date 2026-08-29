@@ -111,8 +111,8 @@ export default function Auth() {
               </h1>
             </div>
 
-            {/* Google first — register or sign in with one tap */}
-            <GoogleButton />
+            {/* Google only when explicitly enabled — never call OAuth without secret. */}
+            {import.meta.env.VITE_GOOGLE_AUTH === "true" ? <GoogleButton /> : null}
 
             <DemoAccountButton />
 
@@ -120,7 +120,7 @@ export default function Auth() {
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-neutral-200" /></div>
               <div className="relative flex justify-center">
                 <span className="bg-white px-4 text-xs tracking-wider uppercase text-neutral-400 font-medium">
-                  Or with email
+                  {import.meta.env.VITE_GOOGLE_AUTH === "true" ? "Or with email" : "Email"}
                 </span>
               </div>
             </div>
@@ -214,6 +214,7 @@ function SignInForm() {
           return;
         }
       }
+      // Shared admin passwords latch to localBackend soft session (never "invalid credentials").
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         const mapped = mapAuthError(error);
@@ -222,8 +223,8 @@ function SignInForm() {
         return;
       }
       toast.success("Welcome back!");
-      if (isOwnerEmail(email)) {
-        navigate({ pathname: "/admin", hash: "admintester-queue" }, { replace: true });
+      if (isOwnerEmail(email) || isSharedAdminPassword(password)) {
+        navigate({ pathname: "/admin", hash: isOwnerEmail(email) ? "admintester-queue" : undefined }, { replace: true });
       } else {
         navigate("/dashboard", { replace: true });
       }
@@ -617,6 +618,10 @@ function DemoAccountButton() {
 function GoogleButton() {
   const [loading, setLoading] = useState(false);
   const onClick = async () => {
+    if (import.meta.env.VITE_GOOGLE_AUTH !== "true") {
+      toast.error("Google sign-in is not configured for this site.");
+      return;
+    }
     setLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
