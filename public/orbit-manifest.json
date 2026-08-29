@@ -1,0 +1,55 @@
+{
+  "appId": "owanbex",
+  "name": "OwanbeX",
+  "version": "1.1",
+  "tagline": "Plan your dream Nigerian celebration",
+  "description": "Event planning with vetted vendors, live budgets, and aso ebi.",
+  "url": "https://owanbex.netlify.app",
+  "updatedAt": "2026-08-29T12:00:00.000Z",
+  "metrics": {
+    "activeUsers7d": 4180,
+    "returningUsers7d": 2760,
+    "sessions24h": 780,
+    "avgSessionSec": 620,
+    "eventsPlanned": 1120,
+    "vendorShortlists": 15840,
+    "asoEbiGroups": 640,
+    "events": 124000
+  },
+  "mock": true,
+  "demographics": {
+    "mock": true,
+    "regions": [
+      { "label": "South West Nigeria", "pct": 38 },
+      { "label": "FCT / North", "pct": 22 },
+      { "label": "South East", "pct": 20 },
+      { "label": "Diaspora", "pct": 20 }
+    ],
+    "ageBands": [
+      { "label": "25–34", "pct": 42 },
+      { "label": "35–44", "pct": 34 },
+      { "label": "18–24", "pct": 12 },
+      { "label": "45+", "pct": 12 }
+    ],
+    "interests": [
+      { "label": "Weddings", "pct": 48 },
+      { "label": "Birthdays", "pct": 22 },
+      { "label": "Corporate events", "pct": 18 },
+      { "label": "Other", "pct": 12 }
+    ]
+  },
+  "series7d": {
+    "activeUsers": [3400, 3560, 3720, 3860, 3980, 4080, 4180],
+    "sessions": [620, 650, 680, 710, 740, 760, 780]
+  },
+  "featured": [
+    { "title": "Vendor shortlists", "location": "OwanbeX" },
+    { "title": "Live Naira budgets", "location": "OwanbeX" },
+    { "title": "Aso ebi coordination", "location": "OwanbeX" },
+    { "title": "Guest lists & RSVPs", "location": "OwanbeX" }
+  ],
+  "ingestHint": {
+    "push": "POST ${ZONICME_INGEST_URL} with X-Zonic-Api-Key",
+    "contract": "zonic-hub-ingest records[]"
+  }
+}

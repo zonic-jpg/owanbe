@@ -61,12 +61,12 @@ export default function Landing() {
       </header>
 
       {/* ── HERO: left-aligned headline, image banner below ── */}
-      <section className="pt-20 sm:pt-28 pb-16 px-6">
+      <section className="pt-[max(5rem,calc(4.5rem+env(safe-area-inset-top)))] sm:pt-28 pb-16 px-5 sm:px-6">
         <div className="max-w-6xl mx-auto animate-fade-up text-left">
           <p className="text-sm sm:text-base font-semibold text-red-500 tracking-[0.2em] uppercase">
             {t("hero.eyebrow")}
           </p>
-          <h1 className="mt-5 sm:mt-7 font-apple-tight text-[44px] sm:text-7xl lg:text-[104px] leading-[0.92] text-neutral-950 font-extrabold tracking-tight">
+          <h1 className="mt-5 sm:mt-7 font-apple-tight text-[2.35rem] sm:text-7xl lg:text-[104px] leading-[0.92] text-neutral-950 font-extrabold tracking-tight">
             {t("hero.title.line1")}<br />
             {t("hero.title.line2")}<br />
             <span className="bg-gradient-to-r from-fuchsia-600 via-red-500 to-amber-500 bg-clip-text text-transparent">

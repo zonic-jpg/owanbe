@@ -140,12 +140,27 @@
     overflow-x: hidden;             /* kill horizontal wobble from full-bleed children */
     overscroll-behavior-y: none;    /* stop rubber-band content shift */
     -webkit-text-size-adjust: 100%;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
 
   /* Stop flex/grid children from forcing the page wider than the viewport,
      which is the usual cause of the "wobble" on scroll. */
   * {
     min-width: 0;
+  }
+
+  img, video, canvas, svg {
+    max-width: 100%;
+  }
+
+  /* Prefer 44px+ tap targets on interactive controls without fighting shadcn sizing */
+  @media (max-width: 767px) {
+    button:not([data-compact]),
+    [role="button"]:not([data-compact]),
+    a.btn {
+      min-height: 2.75rem;
+    }
   }
 
   h1, h2, h3, h4, h5, h6 {

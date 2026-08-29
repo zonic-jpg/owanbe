@@ -42,10 +42,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top bar */}
-      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 font-apple">
-        <div className="container flex items-center justify-between h-16">
-          <div className="flex items-center gap-8">
-            <span className="inline-flex items-center justify-center h-11 w-11 rounded-full bg-white shadow-sm ring-1 ring-black/5 shrink-0">
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 font-apple pt-[env(safe-area-inset-top)]">
+        <div className="container flex items-center justify-between h-14 sm:h-16 gap-2 min-w-0">
+          <div className="flex items-center gap-3 sm:gap-8 min-w-0">
+            <span className="inline-flex items-center justify-center h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-white shadow-sm ring-1 ring-black/5 shrink-0">
               <Logo />
             </span>
             <nav className="hidden md:flex items-center gap-1">
@@ -68,7 +68,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -90,7 +90,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button onClick={() => navigate("/auth")} className="bg-gradient-gold text-primary-foreground hover:opacity-90">
+              <Button onClick={() => navigate("/auth")} className="bg-gradient-gold text-primary-foreground hover:opacity-90 h-10 px-3 sm:px-4 text-sm">
                 Sign in
               </Button>
             )}
@@ -98,11 +98,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {/* Mobile menu */}
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden text-foreground hover:bg-muted">
+                <Button variant="ghost" size="icon" className="md:hidden text-foreground hover:bg-muted h-10 w-10">
                   <Menu className="w-5 h-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-72">
+              <SheetContent side="right" className="w-[min(18rem,88vw)]">
                 <div className="mt-8 flex flex-col gap-1">
                   {user && items.map((it) => {
                     const Icon = it.icon;
@@ -112,7 +112,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         to={it.to}
                         className={({ isActive }) =>
                           cn(
-                            "flex items-center gap-3 px-4 py-3 rounded-lg font-medium",
+                            "flex items-center gap-3 px-4 py-3.5 min-h-[48px] rounded-lg font-medium touch-manipulation",
                             isActive ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
                           )
                         }
@@ -122,7 +122,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     );
                   })}
                   {!user && (
-                    <Link to="/auth" className="px-4 py-3 rounded-lg bg-gradient-gold text-primary-foreground text-center font-medium">
+                    <Link to="/auth" className="px-4 py-3.5 min-h-[48px] rounded-lg bg-gradient-gold text-primary-foreground text-center font-medium flex items-center justify-center">
                       Sign in
                     </Link>
                   )}
@@ -133,11 +133,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="flex-1 pb-20 md:pb-0">{children}</main>
+      <main className="flex-1 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">{children}</main>
 
       {/* Mobile bottom nav (only when signed in) */}
       {user && (
-        <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-lg border-t border-border">
+        <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-lg border-t border-border pb-[env(safe-area-inset-bottom)]">
           <div className="grid gap-1 p-1.5 max-w-md mx-auto" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
             {items.map((it) => {
               const Icon = it.icon;
@@ -147,12 +147,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   key={it.to}
                   to={it.to}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-1 py-2 rounded-lg text-xs font-medium",
+                    "flex flex-col items-center justify-center gap-0.5 py-2.5 min-h-[48px] rounded-lg text-[11px] font-medium touch-manipulation",
                     active ? "text-primary" : "text-muted-foreground"
                   )}
                 >
                   <Icon className={cn("w-5 h-5", active && "text-primary")} />
-                  <span className="truncate">{it.label}</span>
+                  <span className="truncate max-w-full px-0.5">{it.label}</span>
                 </Link>
               );
             })}

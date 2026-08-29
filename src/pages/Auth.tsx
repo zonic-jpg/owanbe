@@ -93,8 +93,8 @@ export default function Auth() {
         </div>
 
         {/* ── Form side ───────────────────────────────────── */}
-        <div className="flex items-center justify-center px-6 py-10 sm:px-12 bg-white">
-          <div className="w-full max-w-sm space-y-7">
+        <div className="flex items-center justify-center px-5 py-8 sm:px-12 sm:py-10 bg-white pb-[max(2.5rem,env(safe-area-inset-bottom))]">
+          <div className="w-full max-w-sm space-y-6 sm:space-y-7">
             <div className="lg:hidden flex justify-center">
               <Link to="/" className="font-apple-tight text-2xl tracking-tight text-neutral-950">
                 OwanbeX
@@ -103,7 +103,7 @@ export default function Auth() {
 
             <div className="space-y-2 text-center lg:text-left">
               <p className="text-sm font-semibold text-rose-600 tracking-tight uppercase">Welcome</p>
-              <h1 className="font-apple-tight text-5xl sm:text-6xl leading-[0.95] text-neutral-950">
+              <h1 className="font-apple-tight text-[2.25rem] xs:text-5xl sm:text-6xl leading-[0.95] text-neutral-950">
                 Sign in.<br />
                 <span className="bg-gradient-to-r from-fuchsia-600 via-rose-500 to-amber-500 bg-clip-text text-transparent">
                   Start planning.

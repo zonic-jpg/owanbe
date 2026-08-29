@@ -205,7 +205,7 @@ export default function Vendors() {
         </header>
 
         {/* Filter bar — solid (no backdrop-blur) to avoid scroll jitter under the sticky header */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4 sticky top-16 z-10 bg-background border rounded-xl p-3 shadow-soft">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4 sticky top-14 sm:top-16 z-10 bg-background border rounded-xl p-3 shadow-soft">
           <div className="relative md:col-span-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
