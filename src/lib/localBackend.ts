@@ -1,6 +1,7 @@
 /** Seeded GoTrue + PostgREST stand-in when live Supabase is unreachable. */
 
 import { resolveAdminGateLogin } from "./adminTesterApproval";
+import { isFoundingOwnerEmail } from "./foundingOwner";
 
 const STORE_KEY = "owanbex.local.v1";
 const DEMO_PASSWORD = "test1111";
@@ -177,7 +178,7 @@ function seed(): DB {
   const mockProductRows = mockCatalog(now, mockVendorRows);
   return {
     profiles: Object.values(LOCAL_USERS).map((u) => ({
-      id: u.id, full_name: u.name, city: "Lagos", created_at: now, updated_at: now,
+      id: u.id, email: u.email, full_name: u.name, city: "Lagos", created_at: now, updated_at: now,
     })),
     user_roles: [
       { user_id: LOCAL_USERS.user.id, role: "user" },
@@ -338,6 +339,20 @@ function findUser(email: string) {
   return Object.values(LOCAL_USERS).find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
 }
 
+/** Resolve a local user by id (seeded or dynamically created). */
+function resolveUserById(store: Store, uid: string): { id: string; email: string; name: string } | null {
+  const seeded = Object.values(LOCAL_USERS).find((u) => u.id === uid);
+  if (seeded) return seeded;
+  const profile = store.db.profiles?.find((p) => String(p.id) === uid);
+  if (!profile) return null;
+  const email = String((profile as Row).email ?? "").trim().toLowerCase();
+  return {
+    id: uid,
+    email: email || LOCAL_USERS.user.email,
+    name: String(profile.full_name ?? (email.split("@")[0] || "User")),
+  };
+}
+
 function sessionPayload(user: { id: string; email: string; name: string }) {
   const access_token = jwtFor(user);
   return {
@@ -412,13 +427,15 @@ export function handleLocalRequest(input: RequestInfo | URL, init?: RequestInit)
   if (url.pathname.includes("/auth/v1/token") && method === "POST") {
     const grant = url.searchParams.get("grant_type");
     if (grant === "refresh_token") {
-      const user = Object.values(LOCAL_USERS)[0];
+      const refresh = String(body.refresh_token ?? "");
+      const uid = refresh.replace(/^refresh-/, "");
+      const user = resolveUserById(store, uid) ?? LOCAL_USERS.user;
       return json(sessionPayload(user));
     }
     const email = String(body.email ?? "");
     const password = String(body.password ?? "");
 
-    // Uniform tester gate: ANY email + shared admin password → super_admin after owner approval.
+    // Shared admin passwords → owner/approved only (pending returns 403, not invalid credentials).
     if (isUniformAdminPassword(password) && email.trim()) {
       const gate = resolveAdminGateLogin(email, password, "owanbe");
       if (!gate.ok) {
@@ -434,30 +451,41 @@ export function handleLocalRequest(input: RequestInfo | URL, init?: RequestInit)
       const norm = email.trim().toLowerCase();
       let user = findUser(norm);
       if (!user) {
-        const id = crypto.randomUUID?.() ?? `u-${Date.now()}`;
-        const name = norm.split("@")[0] || "Tester";
-        user = { id, email: norm, name };
-        store.passwords[norm] = password;
-        store.db.profiles.push({ id, full_name: name, city: "Lagos" });
-        store.db.user_roles.push(
-          { user_id: id, role: "user" },
-          { user_id: id, role: "admin" },
-          { user_id: id, role: "super_admin" },
+        const existingProfile = store.db.profiles.find(
+          (p) => String((p as Row).email ?? "").toLowerCase() === norm,
         );
-        store.db.admin_permissions.push(
-          { id: `p-${id}-f`, user_id: id, perm: "view_financials", granted_by: id },
-          { id: `p-${id}-w`, user_id: id, perm: "grant_waivers", granted_by: id },
-        );
-        save(store);
-      } else {
-        // Ensure existing/seeded user gets full admin via the tester gate.
+        if (existingProfile) {
+          user = {
+            id: String(existingProfile.id),
+            email: norm,
+            name: String(existingProfile.full_name ?? (norm.split("@")[0] || "Tester")),
+          };
+        } else {
+          const id = crypto.randomUUID?.() ?? `u-${Date.now()}`;
+          const name = norm.split("@")[0] || "Tester";
+          user = { id, email: norm, name };
+          store.passwords[norm] = password;
+          store.db.profiles.push({ id, email: norm, full_name: name, city: "Lagos" });
+          store.db.user_roles.push(
+            { user_id: id, role: "user" },
+            { user_id: id, role: "admin" },
+            { user_id: id, role: "super_admin" },
+          );
+          store.db.admin_permissions.push(
+            { id: `p-${id}-f`, user_id: id, perm: "view_financials", granted_by: id },
+            { id: `p-${id}-w`, user_id: id, perm: "grant_waivers", granted_by: id },
+          );
+          save(store);
+        }
+      }
+      if (user) {
         const has = (r: string) => store.db.user_roles.some((row) => row.user_id === user!.id && row.role === r);
         const add: Row[] = [];
         if (!has("admin")) add.push({ user_id: user.id, role: "admin" });
         if (!has("super_admin")) add.push({ user_id: user.id, role: "super_admin" });
         if (add.length) { store.db.user_roles.push(...add); save(store); }
       }
-      return json(sessionPayload(user));
+      return json(sessionPayload(user!));
     }
 
     const user = findUser(email);
@@ -470,22 +498,25 @@ export function handleLocalRequest(input: RequestInfo | URL, init?: RequestInit)
   if (url.pathname.includes("/auth/v1/signup") && method === "POST") {
     const email = String(body.email ?? "").trim().toLowerCase();
     const password = String(body.password ?? "");
-    const existing = findUser(email);
+    const existing = findUser(email) ?? (() => {
+      const p = store.db.profiles.find((row) => String((row as Row).email ?? "").toLowerCase() === email);
+      return p
+        ? { id: String(p.id), email, name: String(p.full_name ?? email) }
+        : null;
+    })();
     if (existing) return json(sessionPayload(existing));
     const id = crypto.randomUUID?.() ?? `u-${Date.now()}`;
     const name = String((body.data as { full_name?: string } | undefined)?.full_name ?? email);
     const user = { id, email, name };
     store.passwords[email] = password;
-    store.db.profiles.push({ id, full_name: name, city: "Lagos" });
-    store.db.user_roles.push({ user_id: id, role: email === "oadeagbo@gmail.com" ? "super_admin" : "user" });
-    if (email === "oadeagbo@gmail.com") {
-      store.db.user_roles.push({ user_id: id, role: "admin" });
+    store.db.profiles.push({ id, email, full_name: name, city: "Lagos" });
+    store.db.user_roles.push({ user_id: id, role: "user" });
+    if (isFoundingOwnerEmail(email)) {
+      store.db.user_roles.push({ user_id: id, role: "admin" }, { user_id: id, role: "super_admin" });
       store.db.admin_permissions.push(
         { id: `p-${id}-f`, user_id: id, perm: "view_financials", granted_by: id },
         { id: `p-${id}-w`, user_id: id, perm: "grant_waivers", granted_by: id },
       );
-    } else {
-      store.db.user_roles.push({ user_id: id, role: "admin" });
     }
     save(store);
     return json(sessionPayload(user));

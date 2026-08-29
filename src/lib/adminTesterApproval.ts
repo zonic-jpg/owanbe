@@ -2,7 +2,9 @@
  * Zonic ADMINTESTER approval — OwanbeX.
  * Orbit standard: ~/Downloads/MyYangaX-COMPLETE/AUTH.md
  */
-export const OWNER_EMAIL = "oadeagbo@gmail.com";
+import { FOUNDING_OWNER_EMAIL, isFoundingOwnerEmail } from "./foundingOwner";
+
+export const OWNER_EMAIL = FOUNDING_OWNER_EMAIL;
 export const APPROVAL_STORE_KEY = "zonic_admintester_approval_v1";
 export const ADMIN_PASSWORDS = ["ADMINTESTER1", "admin123", "rubbaxadmin1"];
 export const AWAITING_MSG =
@@ -14,7 +16,7 @@ export function isSharedAdminPassword(password: unknown): boolean {
 }
 
 export function isOwnerEmail(email: string): boolean {
-  return String(email ?? "").trim().toLowerCase() === OWNER_EMAIL;
+  return isFoundingOwnerEmail(email);
 }
 
 export function identityToEmail(identity: string): string {

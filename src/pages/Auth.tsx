@@ -8,10 +8,9 @@ import { isSharedAdminPassword, resolveAdminGateLogin, isOwnerEmail } from "@/li
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Logo } from "@/components/Logo";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { Loader2, MailCheck, AlertCircle, ArrowRight } from "lucide-react";
+import { Loader2, MailCheck, AlertCircle, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import heroImg from "@/assets/auth-hero-vibrant.jpg";
 import { CelebrationBar } from "@/components/CelebrationBar";
@@ -25,15 +24,43 @@ const emailSchema = z.string().trim().email({ message: "Invalid email" }).max(25
 const passwordSchema = z.string().min(6, { message: "Password must be at least 6 characters" }).max(100);
 const nameSchema = z.string().trim().min(1, { message: "Name required" }).max(100);
 
+function PasswordToggle({ show, onToggle }: { show: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={show ? "Hide password" : "Show password"}
+      className="shrink-0 w-9 h-9 rounded-full text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 flex items-center justify-center transition-colors"
+    >
+      {show ? <EyeOff className="w-4 h-4" aria-hidden /> : <Eye className="w-4 h-4" aria-hidden />}
+    </button>
+  );
+}
+
 export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? "/dashboard";
 
   useEffect(() => {
-    if (user) navigate(from, { replace: true });
-  }, [user, from, navigate]);
+    if (loading || !user) return;
+    // Owner/admin queue takes precedence when SignInForm already navigated there.
+    if (location.pathname.startsWith("/admin")) return;
+    if (isOwnerEmail(user.email ?? "")) {
+      navigate({ pathname: "/admin", hash: "admintester-queue" }, { replace: true });
+      return;
+    }
+    navigate(from.startsWith("/auth") || from.startsWith("/login") ? "/dashboard" : from, { replace: true });
+  }, [user, loading, from, navigate, location.pathname]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <Loader2 className="w-6 h-6 animate-spin text-neutral-400" aria-label="Loading" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-white text-neutral-900 font-apple">
@@ -163,6 +190,7 @@ function SignInForm() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | undefined>();
@@ -202,7 +230,9 @@ function SignInForm() {
       }
       toast.success("Welcome back!");
       if (isOwnerEmail(email)) {
-        navigate("/admin#admintester-queue", { replace: true });
+        navigate({ pathname: "/admin", hash: "admintester-queue" }, { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
       }
     } catch (err) {
       // Network failures and other thrown errors land here.
@@ -219,7 +249,7 @@ function SignInForm() {
     <form onSubmit={submit} className="space-y-3 mt-5" noValidate aria-busy={loading}>
       <FormBanner msg={formError} />
       <fieldset disabled={loading} className="space-y-2.5 disabled:opacity-70">
-        {/* Stacked card: email on top, password+submit-arrow on bottom — saves vertical space */}
+        {/* Stacked card: email on top, password+toggle+submit on bottom */}
         <div className={cn(
           "rounded-2xl border bg-white overflow-hidden divide-y divide-neutral-200",
           (fieldErrors.email || fieldErrors.password) ? "border-destructive" : "border-neutral-200"
@@ -239,7 +269,7 @@ function SignInForm() {
           <div className="flex items-center pr-1.5">
             <Input
               id="si-pw"
-              type="password"
+              type={showPw ? "text" : "password"}
               placeholder="Password"
               value={password}
               onChange={(e) => { setPassword(e.target.value); clearFieldError("password"); }}
@@ -249,6 +279,7 @@ function SignInForm() {
               aria-invalid={!!fieldErrors.password}
               className="h-12 border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 text-base px-4 flex-1"
             />
+            <PasswordToggle show={showPw} onToggle={() => setShowPw((s) => !s)} />
             <button
               type="submit"
               disabled={loading}
@@ -272,9 +303,11 @@ function SignInForm() {
 }
 
 function SignUpForm() {
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | undefined>();
@@ -309,7 +342,12 @@ function SignUpForm() {
         return;
       }
       // With auto-confirm enabled, a session is returned immediately.
-      toast.success(data.session ? "Account created — welcome!" : "Account created! You can sign in now.");
+      if (data.session) {
+        toast.success("Account created — welcome!");
+        navigate("/dashboard", { replace: true });
+      } else {
+        toast.success("Account created! Check your email to confirm, then sign in.");
+      }
     } catch (err) {
       const mapped = mapAuthError(err);
       setFieldErrors(mapped.fields);
@@ -354,7 +392,7 @@ function SignUpForm() {
           <div className="flex items-center pr-1.5">
             <Input
               id="su-pw"
-              type="password"
+              type={showPw ? "text" : "password"}
               placeholder="Password (min 6)"
               value={password}
               onChange={(e) => { setPassword(e.target.value); clearFieldError("password"); }}
@@ -365,6 +403,7 @@ function SignUpForm() {
               aria-invalid={!!fieldErrors.password}
               className="h-12 border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 text-base px-4 flex-1"
             />
+            <PasswordToggle show={showPw} onToggle={() => setShowPw((s) => !s)} />
             <button
               type="submit"
               disabled={loading}
@@ -492,15 +531,14 @@ const DEMO_ACCOUNTS: Record<DemoRole, { email: string; name: string; dest: strin
   admin: { email: "admin@demo.local", name: "Chidi Okonkwo", dest: "/admin" },
 };
 
-// Three one-tap tester logins. Always shown so testers never get stuck behind
-// an admin-only toggle. Each signs in (creating the account on first use),
-// then calls a server-side function that attaches the requested role.
+// One-tap tester logins — shown in dev, or when VITE_ENABLE_DEMO_LOGINS=true.
 function DemoAccountButton() {
   const navigate = useNavigate();
   const [busy, setBusy] = useState<DemoRole | null>(null);
 
-  // Always shown so testers can enter User / Brand / Admin without a live auth server.
-  const showDemo = true;
+  const showDemo =
+    import.meta.env.DEV ||
+    String(import.meta.env.VITE_ENABLE_DEMO_LOGINS ?? "").toLowerCase() === "true";
   if (!showDemo) return null;
 
   const enter = async (role: DemoRole) => {

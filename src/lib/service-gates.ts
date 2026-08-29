@@ -30,18 +30,24 @@ export function useServiceGate(service: ServiceKey, eventId?: string | null) {
   useEffect(() => {
     let live = true;
     (async () => {
-      const [{ data: gates }, auth] = await Promise.all([
-        supabase.from("service_gates").select("*").eq("service", service),
-        supabase.auth.getUser(),
-      ]);
-      const gate = (gates?.[0] ?? null) as ServiceGate | null;
-      let payments: Array<{ service: string; event_id: string | null; status: string }> = [];
-      if (gate?.enabled && auth.data.user) {
-        const { data } = await supabase.from("service_payments")
-          .select("service, event_id, status").eq("user_id", auth.data.user.id).eq("service", service);
-        payments = data ?? [];
+      try {
+        const [{ data: gates }, auth] = await Promise.all([
+          supabase.from("service_gates").select("*").eq("service", service),
+          supabase.auth.getUser(),
+        ]);
+        const gate = (gates?.[0] ?? null) as ServiceGate | null;
+        let payments: Array<{ service: string; event_id: string | null; status: string }> = [];
+        if (gate?.enabled && auth.data.user) {
+          const { data } = await supabase.from("service_payments")
+            .select("service, event_id, status").eq("user_id", auth.data.user.id).eq("service", service);
+          payments = data ?? [];
+        }
+        if (live) setState({ loading: false, blocked: gateBlocks(gate ?? undefined, payments, service, eventId), gate });
+      } catch (err) {
+        console.warn("[useServiceGate] failed open", err);
+        // Fail open — never leave GateGuard spinning (looks like a blank page).
+        if (live) setState({ loading: false, blocked: false, gate: null });
       }
-      if (live) setState({ loading: false, blocked: gateBlocks(gate ?? undefined, payments, service, eventId), gate });
     })();
     return () => { live = false; };
   }, [service, eventId]);
