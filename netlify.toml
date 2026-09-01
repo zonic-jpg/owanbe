@@ -5,8 +5,9 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  # VITE_SUPABASE_URL — set via Netlify UI/API env (do not hardcode)
-  # VITE_SUPABASE_ANON_KEY — set via Netlify UI/API env (do not hardcode)
+  VITE_SUPABASE_URL = "https://nuleyrowkiuxrnlrkrkd.supabase.co"
+  VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51bGV5cm93a2l1eHJubHJrcmtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyMDc5OTIsImV4cCI6MjEwMzc4Mzk5Mn0.xKdRH0HbGc6wztT_TL5Q4ZkUrcU4tRCl2cVwakaFYhQ"
+  VITE_DATA_MODE = "live"
   # Never call Google OAuth without provider secret configured in Supabase.
   VITE_GOOGLE_AUTH = "false"
 
