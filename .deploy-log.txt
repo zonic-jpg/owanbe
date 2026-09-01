@@ -1,0 +1,170 @@
+START 2026-08-29T13:48:27Z
+token_len=40
+
+> vite_react_shadcn_ts@1.0.0 build
+> vite build
+
+vite v5.4.19 building for production...
+transforming...
+Browserslist: browsers data (caniuse-lite) is 14 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+✓ 2819 modules transformed.
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) /Users/olufemiadeagbo/Downloads/owanbe-6/src/lib/analytics-track.ts is dynamically imported by /Users/olufemiadeagbo/Downloads/owanbe-6/src/contexts/ShortlistContext.tsx but also statically imported by /Users/olufemiadeagbo/Downloads/owanbe-6/src/pages/VendorProfile.tsx, dynamic import will not move module into another chunk.
+
+rendering chunks...
+computing gzip size...
+dist/index.html                                            1.57 kB │ gzip:   0.65 kB
+dist/assets/groom_attire_2-rDfvq_8l.jpg                   25.50 kB
+dist/assets/groom_attire_4-B1_rPm4n.jpg                   28.98 kB
+dist/assets/small_chops_3-CpY5AcVy.jpg                    34.31 kB
+dist/assets/groom_attire_3-BNerlMvn.jpg                   35.28 kB
+dist/assets/cake_4-rk8cgrOm.jpg                           35.52 kB
+dist/assets/jewellery_2-DsNQDQY3.jpg                      37.45 kB
+dist/assets/photography_2-D3uwx7kX.jpg                    38.39 kB
+dist/assets/videographer_4-BkqeZxGH.jpg                   40.34 kB
+dist/assets/hair_stylist_3-DEFxu2ou.jpg                   41.94 kB
+dist/assets/dj_3-COJvHoMU.jpg                             42.26 kB
+dist/assets/logistics_3-BBqxYDRo.jpg                      42.86 kB
+dist/assets/cake_3-ncnND3yh.jpg                           43.88 kB
+dist/assets/security_2-CbHDm8gq.jpg                       43.95 kB
+dist/assets/cake_2-P-I8Xy3s.jpg                           44.78 kB
+dist/assets/videographer_3-shX1SUSy.jpg                   45.88 kB
+dist/assets/bar_service_4-B3VhxGvy.jpg                    46.25 kB
+dist/assets/souvenirs_2-CLXm-QEO.jpg                      46.90 kB
+dist/assets/catering_4-Bku2-8nj.jpg                       48.08 kB
+dist/assets/lighting_av_3-BnEfqJSv.jpg                    49.37 kB
+dist/assets/hair_stylist_4-BM7OGB94.jpg                   50.17 kB
+dist/assets/stationery_3-VwPZkSWa.jpg                     50.18 kB
+dist/assets/proposal_planner_2-8Ro-Pwho.jpg               50.18 kB
+dist/assets/dessert_table_2-CdL_eZIL.jpg                  50.44 kB
+dist/assets/drinks_4-B11hKhe-.jpg                         50.63 kB
+dist/assets/gele_2-DHZz1vEv.jpg                           50.99 kB
+dist/assets/makeup_2-tFsYSFT6.jpg                         51.59 kB
+dist/assets/lighting_av_2-ru2e_SYA.jpg                    52.76 kB
+dist/assets/transport_3-DuI9ngBG.jpg                      53.28 kB
+dist/assets/videographer_2-CnWw64Wn.jpg                   53.97 kB
+dist/assets/kids_entertainment_3-CSdiJ7k3.jpg             54.95 kB
+dist/assets/mc_3-VwtBFI0C.jpg                             55.26 kB
+dist/assets/gele_4-CrmxFEQv.jpg                           56.24 kB
+dist/assets/planner_4-1mTPrZj5.jpg                        56.63 kB
+dist/assets/venue_4-B2l2zD13.jpg                          56.95 kB
+dist/assets/makeup_4-CPEc2n1v.jpg                         57.06 kB
+dist/assets/souvenirs_3-R9l5MMO-.jpg                      57.74 kB
+dist/assets/dj_2-M05QNFCO.jpg                             57.76 kB
+dist/assets/fireworks_2-CMXhnT33.jpg                      58.50 kB
+dist/assets/security_4-DgdPMkmM.jpg                       58.51 kB
+dist/assets/logistics_4-BDSAAy1j.jpg                      58.62 kB
+dist/assets/rentals_3-BOwXzE1_.jpg                        60.28 kB
+dist/assets/drinks-BZVWSCbp.jpg                           60.48 kB
+dist/assets/small_chops_2-D_v9LCqG.jpg                    60.82 kB
+dist/assets/videographer-D8nY1fKw.jpg                     61.11 kB
+dist/assets/lighting_av_4-jusDFyni.jpg                    61.60 kB
+dist/assets/planner_2-iQpQ7wMH.jpg                        61.91 kB
+dist/assets/makeup_3-tsX4mpRr.jpg                         62.49 kB
+dist/assets/groom_attire-A58UYvI7.jpg                     62.56 kB
+dist/assets/mc_4-B1Qp_1dq.jpg                             63.40 kB
+dist/assets/bridal_wear_3-B8bsW-N9.jpg                    63.56 kB
+dist/assets/rentals_4-C_GDuZSm.jpg                        64.87 kB
+dist/assets/dessert_table_4-CiwVXAZX.jpg                  65.37 kB
+dist/assets/hair_stylist_2-BDPDkVNB.jpg                   65.39 kB
+dist/assets/logistics_2-BnoOHej1.jpg                      66.05 kB
+dist/assets/bridal_wear_4-D_p8P6wI.jpg                    66.52 kB
+dist/assets/decor_3-DzKWXqCW.jpg                          66.61 kB
+dist/assets/fireworks_4-Bpp28PPr.jpg                      67.06 kB
+dist/assets/transport_2-C3MaMe12.jpg                      67.84 kB
+dist/assets/venue_3-BTzBuyKR.jpg                          68.40 kB
+dist/assets/drinks_2-B28NxX8j.jpg                         69.16 kB
+dist/assets/dj_4-CtXU5IQL.jpg                             69.54 kB
+dist/assets/alaga_4-DrndAyvU.jpg                          69.62 kB
+dist/assets/hair_stylist-D0WxsQYz.jpg                     69.77 kB
+dist/assets/proposal_planner_3-B7ToQqTK.jpg               70.17 kB
+dist/assets/security_3-BERwattG.jpg                       70.45 kB
+dist/assets/stationery_4-CDD7hnGe.jpg                     70.80 kB
+dist/assets/small_chops_4-A0sgL_v_.jpg                    70.95 kB
+dist/assets/proposal_planner-DLFz2SgN.jpg                 71.00 kB
+dist/assets/bar_service_2-CVPbtcYu.jpg                    71.13 kB
+dist/assets/planner_3-BDzmCrCD.jpg                        71.18 kB
+dist/assets/mc_2-BHOiIfHX.jpg                             73.17 kB
+dist/assets/gele_3-VYaCbS74.jpg                           73.92 kB
+dist/assets/bar_service_3-CD4uXof3.jpg                    75.00 kB
+dist/assets/bridal_wear_2-D3Gj_nYk.jpg                    76.29 kB
+dist/assets/florist_2-BLIwbSxM.jpg                        77.34 kB
+dist/assets/catering_3-CdbZ-gM-.jpg                       78.03 kB
+dist/assets/jewellery_4-jJEgUOTJ.jpg                      78.21 kB
+dist/assets/cake-CtPDvpk9.jpg                             78.97 kB
+dist/assets/rentals_2-BxfOSnTr.jpg                        79.24 kB
+dist/assets/jewellery_3-BnU6BOqN.jpg                      79.26 kB
+dist/assets/rentals-Bjw9TR1S.jpg                          79.83 kB
+dist/assets/photography_4-TtP0jLI1.jpg                    80.48 kB
+dist/assets/alaga_3-VFr6Bmas.jpg                          80.80 kB
+dist/assets/mc-CpIIPKBO.jpg                               81.51 kB
+dist/assets/drinks_3-DPmcIhT5.jpg                         81.54 kB
+dist/assets/photography-3046hIet.jpg                      82.08 kB
+dist/assets/transport-DlyQ3-N0.jpg                        82.37 kB
+dist/assets/photo_booth_4-BEOQu4fr.jpg                    83.19 kB
+dist/assets/kids_entertainment_2-EezWNqMu.jpg             84.17 kB
+dist/assets/photography_3-DB-ciSH4.jpg                    85.69 kB
+dist/assets/dessert_table-DGmAM3lf.jpg                    86.89 kB
+dist/assets/dj-CzvdkSJV.jpg                               89.40 kB
+dist/assets/catering_2-qNnNGFBg.jpg                       89.87 kB
+dist/assets/transport_4-D_9oT616.jpg                      92.34 kB
+dist/assets/kids_entertainment_4-Cy1xejDP.jpg             93.95 kB
+dist/assets/florist_4-BCay1y4M.jpg                        94.22 kB
+dist/assets/fireworks_3-DSImYM1D.jpg                      95.14 kB
+dist/assets/alaga_2-uldwINwn.jpg                          97.22 kB
+dist/assets/fireworks-BUVEGm10.jpg                        97.42 kB
+dist/assets/decor_4-B4blSUbO.jpg                          97.60 kB
+dist/assets/proposal_planner_4-BXPgrN_W.jpg              100.10 kB
+dist/assets/bridal_wear-B3HbWlUb.jpg                     100.59 kB
+dist/assets/photo_booth_2-lt_d4PYw.jpg                   102.28 kB
+dist/assets/security-BRDX9SrO.jpg                        102.98 kB
+dist/assets/aso_ebi_3-TGFHOnqO.jpg                       103.07 kB
+dist/assets/logistics-aF6SHE1w.jpg                       103.42 kB
+dist/assets/bar_service-BtBpTqjE.jpg                     103.56 kB
+dist/assets/kids_entertainment-CpsGBu0e.jpg              103.93 kB
+dist/assets/souvenirs-mrLNiRh0.jpg                       104.17 kB
+dist/assets/gele-Ui94hvT7.jpg                            106.00 kB
+dist/assets/florist_3-B2HFBQUF.jpg                       106.45 kB
+dist/assets/aso_ebi_2-CW6vduz8.jpg                       106.54 kB
+dist/assets/lighting_av-D73ljC7V.jpg                     108.82 kB
+dist/assets/makeup-GlEkYHkp.jpg                          111.82 kB
+dist/assets/venue_2-Czb9MuJA.jpg                         113.90 kB
+dist/assets/photo_booth_3-BEwWaE3F.jpg                   114.45 kB
+dist/assets/dessert_table_3-Bhl2JFTX.jpg                 116.36 kB
+dist/assets/stationery_2-CbXsYVhq.jpg                    119.50 kB
+dist/assets/alaga-BmbSKzwQ.jpg                           120.09 kB
+dist/assets/jewellery-DwfTZtJ4.jpg                       122.40 kB
+dist/assets/decor_2-hVYYRAEE.jpg                         123.54 kB
+dist/assets/planner-D_Onkreq.jpg                         133.63 kB
+dist/assets/small_chops-D_9EPGOV.jpg                     141.49 kB
+dist/assets/decor-B2ggimzy.jpg                           141.86 kB
+dist/assets/venue-y-FpKiMt.jpg                           144.91 kB
+dist/assets/stationery-2gK4XgD-.jpg                      156.43 kB
+dist/assets/catering-nwZH7qJm.jpg                        158.91 kB
+dist/assets/souvenirs_4-BxkdEkGS.jpg                     162.11 kB
+dist/assets/florist-DMoiTYsP.jpg                         168.06 kB
+dist/assets/aso_ebi_4-DB-bTn9h.jpg                       175.28 kB
+dist/assets/logo-mark-dark-BYyYsAju.png                  194.06 kB
+dist/assets/photo_booth-DKeqhF2q.jpg                     213.87 kB
+dist/assets/logo-mark-contrast-AK-F6VtX.png              240.77 kB
+dist/assets/auth-hero-vibrant-D0Yf-4Y5.jpg               275.96 kB
+dist/assets/hero-event-bg-9NwmMIuB.jpg                   281.39 kB
+dist/assets/logo-mark-trumpeter-dark-BpWxUXNN.png        303.37 kB
+dist/assets/logo-mark-BJDzpzmm.png                       315.90 kB
+dist/assets/aso_ebi-B60RfqGQ.jpg                         318.85 kB
+dist/assets/apple-venue-BBvY01m0.jpg                     367.60 kB
+dist/assets/apple-tablescape-BZnj9dic.jpg                409.11 kB
+dist/assets/logo-mark-trumpeter-ujMq7Avd.png             479.65 kB
+dist/assets/logo-mark-trumpeter-contrast-C2cPWZxx.png  1,002.16 kB
+dist/assets/apple-dance-CmahWO0X.jpg                   1,519.40 kB
+dist/assets/index-DWdyv_Ms.css                            97.93 kB │ gzip:  16.32 kB
+dist/assets/index-CiMghq00.js                          1,498.80 kB │ gzip: 422.40 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 4.20s
+ ›   Error: Project not found. Please rerun "netlify link"
