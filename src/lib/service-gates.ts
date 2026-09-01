@@ -54,11 +54,8 @@ export function useServiceGate(service: ServiceKey, eventId?: string | null) {
   return state;
 }
 
-/** Record a completed service payment (post-checkout verification, or free-pass logic). */
-export async function recordServicePayment(service: ServiceKey, eventId: string | null, amount: number, provider: string, reference: string) {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return;
-  await supabase.from("service_payments").insert({
-    user_id: auth.user.id, service, event_id: eventId, amount, provider, reference,
-  });
-}
+// NOTE: service payments are recorded ONLY server-side by the zonicme-payment
+// edge function after real provider verification (see GateGuard return flow).
+// The former client-side recordServicePayment() was removed: with the old
+// `service_payments` RLS it let any user self-insert a paid row and unlock
+// services for free. Do not reintroduce a client writer for this table.

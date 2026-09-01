@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { Loader2, Lock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +19,46 @@ export function GateGuard({ service, eventId, featureName, children }: {
 }) {
   const { loading, blocked, gate } = useServiceGate(service, eventId);
   const [paying, setPaying] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+
+  // On return from the payment gateway (…?svcpay=<reference>), confirm the
+  // charge server-side (the edge function writes the service_payments row),
+  // then reload so the gate re-checks and unlocks. The client never records
+  // the payment itself.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const ref = url.searchParams.get("svcpay");
+    if (!ref) return;
+    let cancelled = false;
+    (async () => {
+      setVerifying(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("zonicme-payment", {
+          body: { action: "verify", reference: ref },
+        });
+        const resp = (data ?? {}) as { ok?: boolean; error?: string };
+        if (error || !resp.ok) {
+          toast.error("Payment not confirmed", {
+            description: resp?.error ?? "We couldn't verify that payment. If you were charged, contact support.",
+          });
+        } else {
+          toast.success("Service unlocked", { description: "Your payment was confirmed." });
+        }
+      } catch (e) {
+        toast.error("Verification failed", { description: String((e as { message?: string })?.message ?? e) });
+      } finally {
+        url.searchParams.delete("svcpay");
+        const clean = url.pathname + url.search + url.hash;
+        // Brief delay lets the toast render before we reload to re-check the gate.
+        window.setTimeout(() => { if (!cancelled) window.location.replace(clean); }, 900);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (verifying) {
+    return <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
+  }
 
   if (loading) {
     return <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
