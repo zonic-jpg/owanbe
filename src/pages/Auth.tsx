@@ -14,6 +14,7 @@ import { Loader2, MailCheck, AlertCircle, ArrowRight, Eye, EyeOff } from "lucide
 import { cn } from "@/lib/utils";
 import heroImg from "@/assets/auth-hero-vibrant.jpg";
 import { CelebrationBar } from "@/components/CelebrationBar";
+import { PasswordRecovery } from "@/components/PasswordRecovery";
 
 function zodMsg(err: unknown, fallback: string): string {
   const issues = (err as { errors?: Array<{ message?: string }> })?.errors;
@@ -152,6 +153,7 @@ export default function Auth() {
       </div>
 
       <CelebrationBar />
+      <PasswordRecovery />
     </div>
   );
 }
@@ -289,7 +291,10 @@ function SignInForm() {
         <FieldError id="si-email-err" msg={fieldErrors.email} />
         <FieldError id="si-pw-err" msg={fieldErrors.password} />
       </fieldset>
-      <div className="flex items-center justify-end px-1">
+      <div className="flex items-center justify-between px-1">
+        <a href="#forgot" className="text-xs font-medium text-rose-800 hover:underline">
+          Forgot password?
+        </a>
         <ResendVerificationLink email={email} />
       </div>
     </form>
