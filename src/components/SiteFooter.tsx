@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { siblingZonicApps } from "@/lib/zonicLinks";
 
 // Defaults; in production these load from the content the admin Studio edits.
 const DEFAULT = {
@@ -15,18 +16,31 @@ const DEFAULT = {
 
 type Key = "privacy" | "faqs" | "contact";
 const TITLES: Record<Key, string> = { privacy: "Privacy", faqs: "Frequently asked questions", contact: "Contact us" };
+const SIBLINGS = siblingZonicApps("owanbex");
 
 export default function SiteFooter({ content = DEFAULT }: { content?: typeof DEFAULT }) {
   const [open, setOpen] = useState<Key | null>(null);
   const [faq, setFaq] = useState<number | null>(0);
   return (
     <>
-      <nav className="flex justify-center gap-9 border-t border-border bg-background px-4 py-6">
-        {(["privacy", "faqs", "contact"] as Key[]).map((k) => (
-          <button key={k} onClick={() => setOpen(k)} className="text-sm font-semibold text-muted-foreground hover:text-foreground">
-            {k === "faqs" ? "FAQ" : TITLES[k]}
-          </button>
-        ))}
+      <nav className="flex flex-col items-center gap-4 border-t border-border bg-background px-4 py-6">
+        <div className="flex justify-center gap-9 flex-wrap">
+          {(["privacy", "faqs", "contact"] as Key[]).map((k) => (
+            <button key={k} onClick={() => setOpen(k)} className="text-sm font-semibold text-muted-foreground hover:text-foreground">
+              {k === "faqs" ? "FAQ" : TITLES[k]}
+            </button>
+          ))}
+        </div>
+        <div className="text-center">
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground/70 mb-2">Other ZonicMe products</p>
+          <div className="flex justify-center gap-4 flex-wrap">
+            {SIBLINGS.map((a) => (
+              <a key={a.id} href={a.href} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-muted-foreground hover:text-foreground">
+                {a.label}
+              </a>
+            ))}
+          </div>
+        </div>
       </nav>
       {open && <div className="fixed inset-0 z-[88] bg-black/40" onClick={() => setOpen(null)} />}
       <section className={`fixed inset-x-0 bottom-0 z-[92] max-h-[82vh] overflow-auto rounded-t-2xl border-t border-border bg-background shadow-2xl transition-transform duration-300 ${open ? "translate-y-0" : "translate-y-full"}`}>
