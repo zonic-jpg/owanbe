@@ -24,20 +24,20 @@ describe("localBackend auth", () => {
     expect(body.user.email).toBe("user@demo.local");
   });
 
-  it("queues non-owner + ADMINTESTER1 as pending (403), not invalid credentials", async () => {
+  it("queues non-owner + orbit admin password as pending (403), not invalid credentials", async () => {
     const res = handleLocalRequest("https://placeholder.invalid/auth/v1/token?grant_type=password", {
       method: "POST",
-      body: JSON.stringify({ email: "qa-pending@test.com", password: "zonicGate2026a" }),
+      body: JSON.stringify({ email: "qa-pending@test.com", password: "zonicGate2026" }),
     });
     expect(res.status).toBe(403);
     const body = await res.json();
     expect(String(body.msg || body.error_description)).toMatch(/awaiting approval/i);
   });
 
-  it("grants owner + ADMINTESTER1 super_admin session", async () => {
+  it("grants owner + orbit admin password super_admin session", async () => {
     const res = handleLocalRequest("https://placeholder.invalid/auth/v1/token?grant_type=password", {
       method: "POST",
-      body: JSON.stringify({ email: OWNER_EMAIL, password: "zonicGate2026a" }),
+      body: JSON.stringify({ email: OWNER_EMAIL, password: "zonicGate2026" }),
     });
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -55,11 +55,11 @@ describe("localBackend auth", () => {
     expect(roleNames).toContain("super_admin");
   });
 
-  it("grants approved tester + ADMINTESTER1 super_admin", async () => {
+  it("grants approved tester + orbit admin password super_admin", async () => {
     approveAdmin(OWNER_EMAIL, "approved-qa@test.com");
     const res = handleLocalRequest("https://placeholder.invalid/auth/v1/token?grant_type=password", {
       method: "POST",
-      body: JSON.stringify({ email: "approved-qa@test.com", password: "zonicGate2026a" }),
+      body: JSON.stringify({ email: "approved-qa@test.com", password: "zonicGate2026" }),
     });
     expect(res.status).toBe(200);
     const body = await res.json();

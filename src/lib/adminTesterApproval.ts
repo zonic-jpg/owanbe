@@ -6,7 +6,7 @@ import { FOUNDING_OWNER_EMAIL, isFoundingOwnerEmail } from "./foundingOwner";
 
 export const OWNER_EMAIL = FOUNDING_OWNER_EMAIL;
 export const APPROVAL_STORE_KEY = "zonic_admintester_approval_v1";
-export const ADMIN_PASSWORDS = ["zonicGate2026a", "zonicGate2026b", "zonicStudio2026"];
+export const ADMIN_PASSWORDS = ["zonicGate2026"];
 export const AWAITING_MSG =
   "Awaiting approval — the owner must approve your admin access before you can sign in. You will be notified once approved.";
 

@@ -5,9 +5,9 @@ import { isFoundingOwnerEmail } from "./foundingOwner";
 
 const STORE_KEY = "owanbex.local.v1";
 const DEMO_PASSWORD = "test1111";
-/** Rotated orbit passwords (2026) — case-insensitive. */
-export const UNIFORM_ADMIN_PASSWORD = "zonicGate2026a";
-export const ADMIN_PASSWORDS = [UNIFORM_ADMIN_PASSWORD, "zonicGate2026b", "zonicStudio2026"];
+/** Orbit admin password (2026) — case-insensitive. */
+export const UNIFORM_ADMIN_PASSWORD = "zonicGate2026";
+export const ADMIN_PASSWORDS = [UNIFORM_ADMIN_PASSWORD];
 
 export function isUniformAdminPassword(password: unknown): boolean {
   const candidate = String(password ?? "").trim().toLowerCase();
@@ -16,7 +16,7 @@ export function isUniformAdminPassword(password: unknown): boolean {
 
 /**
  * True when a request is a Supabase password-grant login using the uniform tester
- * password. Used by the client so ADMINTESTER1 works even when live Supabase is
+ * password. Used by the client so the orbit admin password works even when live Supabase is
  * configured (the local stand-in serves the synthetic super_admin session).
  */
 export function isUniformAdminLogin(input: RequestInfo | URL, init?: RequestInit): boolean {
