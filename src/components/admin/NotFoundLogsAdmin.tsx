@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { publicError } from "@/lib/publicMessage";
 
 type Row = {
   id: string;
@@ -28,7 +29,7 @@ export function NotFoundLogsAdmin() {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(500);
-    if (error) toast.error("Failed to load", { description: error.message });
+    if (error) toast.error("Couldn't load the 404 log", { description: publicError(error) });
     setRows((data ?? []) as Row[]);
     setLoading(false);
   };
@@ -39,7 +40,7 @@ export function NotFoundLogsAdmin() {
     if (!confirm(`Delete 404 logs older than ${days} day(s)?`)) return;
     const cutoff = new Date(Date.now() - days * 86400000).toISOString();
     const { error } = await supabase.from("client_404_logs").delete().lt("created_at", cutoff);
-    if (error) return toast.error("Delete failed", { description: error.message });
+    if (error) return toast.error("Couldn't clear that entry", { description: publicError(error) });
     toast.success("Cleared");
     load();
   };

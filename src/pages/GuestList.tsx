@@ -9,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { ArrowLeft, Check, Crown, Loader2, MessageCircle, Plus, Send, Smartphone, Trash2, Users } from "lucide-react";
+import { publicError } from "@/lib/publicMessage";
+import { AlertCircle, ArrowLeft, Check, Crown, Loader2, MessageCircle, Plus, Send, Smartphone, Trash2, Users } from "lucide-react";
 import { CsvImport } from "@/components/admin/CsvImport";
 import { filterGuests, guestStats, type GuestRow } from "@/lib/guest-filters";
 import { GateGuard } from "@/components/GateGuard";
@@ -30,6 +32,17 @@ const catBadge: Record<string, string> = {
   friends: "bg-sky-50 text-sky-700 border-sky-200",
   colleagues: "bg-violet-50 text-violet-700 border-violet-200",
   other: "bg-muted text-muted-foreground border-border",
+};
+
+const channelLabel = (v: string | null | undefined) =>
+  CHANNELS.find((c) => c.v === v)?.l ?? (v ?? "");
+
+const formatSentAt = (iso: string | null | undefined) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? ""
+    : d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 };
 
 /** Contact Picker API (Chrome Android). Detected at runtime; falls back to CSV/manual. */
@@ -64,14 +77,14 @@ function GuestListInner() {
       if (auth.user) {
         const { data: created, error } = await supabase.from("guest_lists")
           .insert({ event_id: eventId, owner_id: auth.user.id }).select("id").single();
-        if (error) toast.error("Could not create guest list", { description: error.message });
+        if (error) toast.error("Could not start your guest list", { description: publicError(error) });
         lid = created?.id ?? null;
       }
     }
     setListId(lid);
     if (lid) {
       const { data: gs, error } = await supabase.from("guests").select("*").eq("list_id", lid).order("created_at");
-      if (error) toast.error("Failed to load guests", { description: error.message });
+      if (error) toast.error("Couldn't load your guests", { description: publicError(error) });
       setRows((gs ?? []) as GuestRow[]);
     }
     setLoading(false);
@@ -86,7 +99,11 @@ function GuestListInner() {
     if (!listId || inserts.length === 0) return { inserted: 0, failed: inserts.length };
     const payload = inserts.map((g) => ({ ...g, list_id: listId }));
     const { data, error } = await supabase.from("guests").insert(payload).select("*");
-    if (error) { toast.error("Add failed", { description: error.message }); return { inserted: 0, failed: inserts.length, errors: [error.message] }; }
+    if (error) {
+      const msg = publicError(error, "We couldn't add that guest. Please try again.");
+      toast.error("Couldn't add guests", { description: msg });
+      return { inserted: 0, failed: inserts.length, errors: [msg] };
+    }
     setRows((r) => [...r, ...((data ?? []) as GuestRow[])]);
     return { inserted: data?.length ?? 0, failed: 0 };
   };
@@ -122,31 +139,76 @@ function GuestListInner() {
     setBusy(id);
     const { error } = await supabase.from("guests").update(patch).eq("id", id);
     setBusy(null);
-    if (error) return toast.error("Update failed", { description: error.message });
+    if (error) return toast.error("Couldn't save that change", { description: publicError(error) });
     setRows((r) => r.map((g) => (g.id === id ? { ...g, ...patch } : g)));
   };
 
-  const markSent = (id: string, via: string) => update(id, { invite_status: "sent", sent_via: via });
-  const markPending = (id: string) => update(id, { invite_status: "pending", sent_via: null });
+  /**
+   * Marking an invite sent is a receipt, not a flag: the row goes through
+   * sending → sent (with the time it happened) or failed (with the reason),
+   * and every one of those states is persisted so a reload still tells the
+   * truth about what went out.
+   */
+  const markSent = async (id: string, via: string) => {
+    const previous = rows.find((g) => g.id === id);
+    setRows((r) => r.map((g) => (g.id === id ? { ...g, invite_status: "sending", sent_via: via } : g)));
+    setBusy(id);
+    const sentAt = new Date().toISOString();
+    const { error } = await supabase
+      .from("guests")
+      .update({ invite_status: "sent", sent_via: via, sent_at: sentAt, send_error: null })
+      .eq("id", id);
+    setBusy(null);
+    if (error) {
+      const reason = publicError(error, "We couldn't record that invite. Please try again.");
+      setRows((r) => r.map((g) => (g.id === id ? { ...g, invite_status: "failed", sent_via: previous?.sent_via ?? via, send_error: reason } : g)));
+      // Best effort: persist the failure so a reload does not show it as never attempted.
+      void supabase.from("guests").update({ invite_status: "failed", send_error: reason }).eq("id", id);
+      toast.error(`Invite to ${previous?.name ?? "guest"} not recorded`, { description: reason });
+      return;
+    }
+    setRows((r) => r.map((g) => (g.id === id ? { ...g, invite_status: "sent", sent_via: via, sent_at: sentAt, send_error: null } : g)));
+    toast.success(`Invite to ${previous?.name ?? "guest"} marked sent`, {
+      description: `${channelLabel(via)} · ${formatSentAt(sentAt)}`,
+    });
+  };
+
+  const markPending = (id: string) =>
+    update(id, { invite_status: "pending", sent_via: null, sent_at: null, send_error: null });
 
   const bulkMarkSent = async (via: string) => {
     if (!selected.size) return;
     setBusy("bulk");
     const ids = [...selected];
-    const { error } = await supabase.from("guests").update({ invite_status: "sent", sent_via: via }).in("id", ids);
+    const sentAt = new Date().toISOString();
+    setRows((r) => r.map((g) => (selected.has(g.id) ? { ...g, invite_status: "sending", sent_via: via } : g)));
+    const { error } = await supabase
+      .from("guests")
+      .update({ invite_status: "sent", sent_via: via, sent_at: sentAt, send_error: null })
+      .in("id", ids);
     setBusy(null);
-    if (error) return toast.error("Bulk update failed", { description: error.message });
-    setRows((r) => r.map((g) => (selected.has(g.id) ? { ...g, invite_status: "sent", sent_via: via } : g)));
-    toast.success(`${ids.length} marked sent via ${via}`);
+    if (error) {
+      const reason = publicError(error, "We couldn't record those invites. Please try again.");
+      setRows((r) => r.map((g) => (selected.has(g.id) ? { ...g, invite_status: "failed", send_error: reason } : g)));
+      return toast.error(`${ids.length} invites not recorded`, { description: reason });
+    }
+    setRows((r) =>
+      r.map((g) => (selected.has(g.id) ? { ...g, invite_status: "sent", sent_via: via, sent_at: sentAt, send_error: null } : g)),
+    );
+    toast.success(`${ids.length} invite${ids.length > 1 ? "s" : ""} marked sent`, {
+      description: `${channelLabel(via)} · ${formatSentAt(sentAt)}`,
+    });
     setSelected(new Set());
   };
 
   const remove = async (id: string) => {
+    const guest = rows.find((g) => g.id === id);
     setBusy(id);
     const { error } = await supabase.from("guests").delete().eq("id", id);
     setBusy(null);
-    if (error) return toast.error("Delete failed", { description: error.message });
+    if (error) return toast.error("Couldn't remove that guest", { description: publicError(error) });
     setRows((r) => r.filter((g) => g.id !== id));
+    toast.success(`${guest?.name ?? "Guest"} removed`);
   };
 
   const toggleSelect = (id: string) => setSelected((s) => {
@@ -279,7 +341,17 @@ function GuestListInner() {
 
       {/* Contact table */}
       {loading ? (
-        <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+        <div className="border rounded-lg divide-y" aria-busy="true" aria-label="Loading guests">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 p-3">
+              <Skeleton className="h-4 w-4 rounded" />
+              <Skeleton className="h-4 flex-1 max-w-[180px] rounded" />
+              <Skeleton className="hidden sm:block h-4 w-32 rounded" />
+              <Skeleton className="hidden md:block h-5 w-16 rounded-full" />
+              <Skeleton className="h-7 w-28 rounded ml-auto" />
+            </div>
+          ))}
+        </div>
       ) : visible.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
           <Users className="w-10 h-10 mx-auto mb-3 opacity-40" />
@@ -333,12 +405,46 @@ function GuestListInner() {
                     </Select>
                   </TableCell>
                   <TableCell>
-                    {g.invite_status === "sent" ? (
-                      <button onClick={() => markPending(g.id)} title="Click to revert to pending">
+                    {g.invite_status === "sending" ? (
+                      <Badge variant="secondary" className="gap-1">
+                        <Loader2 className="w-3 h-3 animate-spin" /> Sending…
+                      </Badge>
+                    ) : g.invite_status === "sent" ? (
+                      <button
+                        onClick={() => markPending(g.id)}
+                        title="Click to revert to pending"
+                        className="text-left"
+                      >
                         <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200">
-                          <Check className="w-3 h-3 mr-1" /> Sent{g.sent_via ? ` · ${g.sent_via}` : ""}
+                          <Check className="w-3 h-3 mr-1" /> Sent{g.sent_via ? ` · ${channelLabel(g.sent_via)}` : ""}
                         </Badge>
+                        {g.sent_at && (
+                          <span className="block text-[11px] text-muted-foreground mt-0.5">
+                            {formatSentAt(g.sent_at)}
+                          </span>
+                        )}
                       </button>
+                    ) : g.invite_status === "failed" ? (
+                      <div className="space-y-1">
+                        <Badge variant="outline" className="border-destructive/40 text-destructive gap-1">
+                          <AlertCircle className="w-3 h-3" /> Not sent
+                        </Badge>
+                        {g.send_error && (
+                          <p className="max-w-[200px] text-[11px] leading-snug text-muted-foreground">{g.send_error}</p>
+                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="sm" variant="outline" className="h-7 text-xs" disabled={busy === g.id}>
+                              Retry via…
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            {CHANNELS.map((c) => (
+                              <DropdownMenuItem key={c.v} onClick={() => markSent(g.id, c.v)}>{c.l}</DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     ) : (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

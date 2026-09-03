@@ -45,11 +45,12 @@ describe("mapAuthError", () => {
     VITE_SUPABASE_PUBLISHABLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test",
   };
 
-  it("never shows raw Failed to fetch", () => {
+  it("never shows raw Failed to fetch, and never names the backend host", () => {
     const mapped = mapAuthError(new TypeError("Failed to fetch"), goodEnv, "https:");
     expect(mapped.form).toBeTruthy();
     expect(mapped.form).not.toMatch(/Failed to fetch/i);
-    expect(mapped.form).toMatch(/kpfzdvzjokdqaqrafffn\.supabase\.co|network|paused/i);
+    expect(mapped.form).not.toMatch(/supabase/i);
+    expect(mapped.form).toMatch(/connection|try again/i);
   });
 
   it("maps AuthRetryableFetchError the same way", () => {
@@ -58,18 +59,27 @@ describe("mapAuthError", () => {
     expect(mapped.form).not.toMatch(/Failed to fetch/i);
   });
 
-  it("explains mixed content", () => {
+  it("keeps mixed-content wiring detail out of the visitor's message", () => {
     const mapped = mapAuthError(
       new TypeError("Failed to fetch"),
       { VITE_SUPABASE_URL: "http://kpfzdvzjokdqaqrafffn.supabase.co", VITE_SUPABASE_ANON_KEY: "key" },
       "https:",
     );
-    expect(mapped.form).toMatch(/mixed content/i);
+    expect(mapped.form).not.toMatch(/supabase|https?:\/\//i);
+    expect(mapped.form).toMatch(/connection|try again/i);
   });
 
-  it("explains missing env instead of fetching", () => {
+  it("does not print env var names when config is missing", () => {
     const mapped = mapAuthError(new TypeError("Failed to fetch"), {}, "https:");
-    expect(mapped.form).toMatch(/VITE_SUPABASE_URL/i);
+    expect(mapped.form).not.toMatch(/VITE_SUPABASE_URL/i);
+    expect(mapped.form).toMatch(/connection|try again/i);
+  });
+
+  it("turns raw permission text into a sign-in prompt", () => {
+    const mapped = mapAuthError({ message: "Unauthorized" }, goodEnv);
+    expect(mapped.form).not.toMatch(/unauthorized/i);
+    const rls = mapAuthError({ message: 'new row violates row-level security policy for table "guests"' }, goodEnv);
+    expect(rls.form).not.toMatch(/row-level security|guests/i);
   });
 
   it("keeps wrong-password as a credential error", () => {

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Upload, Download, Loader2 } from "lucide-react";
 import { parseCsv, downloadCsv } from "@/lib/csv";
 import { toast } from "sonner";
+import { publicError, publicMessage } from "@/lib/publicMessage";
 
 export function CsvImport<T extends Record<string, unknown>>({
   templateName,
@@ -22,13 +23,21 @@ export function CsvImport<T extends Record<string, unknown>>({
     setBusy(true);
     try {
       const rows = await parseCsv<T>(file);
-      if (!rows.length) throw new Error("CSV is empty");
+      if (!rows.length) throw new Error("That file has no rows in it.");
       const res = await onRows(rows);
-      toast.success(`Imported ${res.inserted} rows`, {
-        description: res.failed > 0 ? `${res.failed} rows failed. ${res.errors?.[0] ?? ""}` : undefined,
-      });
+      if (res.inserted === 0 && res.failed > 0) {
+        toast.error("Nothing was imported", {
+          description: publicError(res.errors?.[0], `All ${res.failed} rows were rejected. Check the template and try again.`),
+        });
+      } else {
+        toast.success(`Imported ${res.inserted} row${res.inserted === 1 ? "" : "s"}`, {
+          description: res.failed > 0
+            ? `${res.failed} row${res.failed === 1 ? "" : "s"} skipped. ${publicMessage(res.errors?.[0]) || "Check those rows against the template."}`
+            : `Finished at ${new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}.`,
+        });
+      }
     } catch (e) {
-      toast.error("Import failed", { description: e?.message ?? String(e) });
+      toast.error("Import failed", { description: publicError(e, "We couldn't read that file. Please check it's a CSV and try again.") });
     } finally {
       setBusy(false);
       if (ref.current) ref.current.value = "";

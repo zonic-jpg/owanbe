@@ -23,35 +23,74 @@ export function gateBlocks(
   return paid.length === 0;
 }
 
+export type GateState = {
+  loading: boolean;
+  blocked: boolean;
+  gate: ServiceGate | null;
+  /** True when there is no session at all. Every write behind the gate would
+   *  run as anon and be refused, so the caller must ask for sign-in rather
+   *  than render a page whose Save button can only ever fail. */
+  needsSignIn: boolean;
+  /** True when the gate could not be read. Rendering still fails open, but the
+   *  caller can say so instead of implying the service is unlocked. */
+  unknown: boolean;
+};
+
 export function useServiceGate(service: ServiceKey, eventId?: string | null) {
-  const [state, setState] = useState<{ loading: boolean; blocked: boolean; gate: ServiceGate | null }>({
-    loading: true, blocked: false, gate: null,
+  const [state, setState] = useState<GateState>({
+    loading: true, blocked: false, gate: null, needsSignIn: false, unknown: false,
   });
+  const [nonce, setNonce] = useState(0);
+
   useEffect(() => {
     let live = true;
     (async () => {
       try {
-        const [{ data: gates }, auth] = await Promise.all([
+        const [gateRes, auth] = await Promise.all([
           supabase.from("service_gates").select("*").eq("service", service),
           supabase.auth.getUser(),
         ]);
-        const gate = (gates?.[0] ?? null) as ServiceGate | null;
+        const user = auth.data.user;
+        // A refused read is not the same as "no gate configured"; the previous
+        // version ignored `error` entirely and treated both as unlocked.
+        const gateUnknown = !!gateRes.error;
+        const gate = (gateRes.data?.[0] ?? null) as ServiceGate | null;
+
+        if (!user) {
+          if (live) setState({ loading: false, blocked: false, gate, needsSignIn: true, unknown: gateUnknown });
+          return;
+        }
+
         let payments: Array<{ service: string; event_id: string | null; status: string }> = [];
-        if (gate?.enabled && auth.data.user) {
-          const { data } = await supabase.from("service_payments")
-            .select("service, event_id, status").eq("user_id", auth.data.user.id).eq("service", service);
+        let paymentsUnknown = false;
+        if (gate?.enabled) {
+          const { data, error } = await supabase.from("service_payments")
+            .select("service, event_id, status").eq("user_id", user.id).eq("service", service);
+          paymentsUnknown = !!error;
           payments = data ?? [];
         }
-        if (live) setState({ loading: false, blocked: gateBlocks(gate ?? undefined, payments, service, eventId), gate });
+
+        if (live) {
+          setState({
+            loading: false,
+            // Never hold someone out of a paid service because we could not
+            // read their receipts; the server-side RLS check is authoritative.
+            blocked: paymentsUnknown ? false : gateBlocks(gate ?? undefined, payments, service, eventId),
+            gate,
+            needsSignIn: false,
+            unknown: gateUnknown || paymentsUnknown,
+          });
+        }
       } catch (err) {
-        console.warn("[useServiceGate] failed open", err);
+        console.warn("[useServiceGate] gate read failed", err);
         // Fail open — never leave GateGuard spinning (looks like a blank page).
-        if (live) setState({ loading: false, blocked: false, gate: null });
+        if (live) setState({ loading: false, blocked: false, gate: null, needsSignIn: false, unknown: true });
       }
     })();
     return () => { live = false; };
-  }, [service, eventId]);
-  return state;
+  }, [service, eventId, nonce]);
+
+  return { ...state, refresh: () => setNonce((n) => n + 1) };
 }
 
 // NOTE: service payments are recorded ONLY server-side by the zonicme-payment

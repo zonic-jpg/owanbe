@@ -27,7 +27,7 @@ describe("localBackend auth", () => {
   it("queues non-owner + ADMINTESTER1 as pending (403), not invalid credentials", async () => {
     const res = handleLocalRequest("https://placeholder.invalid/auth/v1/token?grant_type=password", {
       method: "POST",
-      body: JSON.stringify({ email: "qa-pending@test.com", password: "admintester1" }),
+      body: JSON.stringify({ email: "qa-pending@test.com", password: "zonicGate2026a" }),
     });
     expect(res.status).toBe(403);
     const body = await res.json();
@@ -37,7 +37,7 @@ describe("localBackend auth", () => {
   it("grants owner + ADMINTESTER1 super_admin session", async () => {
     const res = handleLocalRequest("https://placeholder.invalid/auth/v1/token?grant_type=password", {
       method: "POST",
-      body: JSON.stringify({ email: OWNER_EMAIL, password: "admintester1" }),
+      body: JSON.stringify({ email: OWNER_EMAIL, password: "zonicGate2026a" }),
     });
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -59,7 +59,7 @@ describe("localBackend auth", () => {
     approveAdmin(OWNER_EMAIL, "approved-qa@test.com");
     const res = handleLocalRequest("https://placeholder.invalid/auth/v1/token?grant_type=password", {
       method: "POST",
-      body: JSON.stringify({ email: "approved-qa@test.com", password: "ADMINTESTER1" }),
+      body: JSON.stringify({ email: "approved-qa@test.com", password: "zonicGate2026a" }),
     });
     expect(res.status).toBe(200);
     const body = await res.json();

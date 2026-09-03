@@ -6,10 +6,20 @@ import {
   resolveSupabaseEnv,
   type ViteEnvLike,
 } from "./supabaseEnv";
+import { publicError, publicMessage } from "./publicMessage";
 
 export type FieldErrors = { email?: string; password?: string; name?: string };
 
 export type MappedAuthError = { fields: FieldErrors; form?: string };
+
+/**
+ * Visitor-safe copy for "we cannot reach the sign-in service". The detailed
+ * diagnosis (project host, missing env var names, dashboard steps) is real and
+ * useful, but only to whoever deploys the app — it is logged and offered to
+ * admins instead of being printed under the password field.
+ */
+const UNREACHABLE_PUBLIC =
+  "We can't reach the sign-in service right now. Check your connection and try again in a moment — your details are fine.";
 
 /**
  * Translate a Supabase auth error / network failure into field-scoped and/or
@@ -24,7 +34,9 @@ export function mapAuthError(
   const mixed = mixedContentIssue(cfg.url, pageProtocol);
 
   if (!cfg.configured || mixed || looksLikeFetchFailure(err)) {
-    return { fields: {}, form: describeUnreachableSupabase({ env: cfg, pageProtocol, error: err }) };
+    const diagnostic = describeUnreachableSupabase({ env: cfg, pageProtocol, error: err });
+    console.warn("[auth]", diagnostic);
+    return { fields: {}, form: publicMessage(diagnostic, { fallback: UNREACHABLE_PUBLIC, authFallback: UNREACHABLE_PUBLIC }) };
   }
 
   const e = err as { message?: string; code?: string; status?: number };
@@ -72,7 +84,11 @@ export function mapAuthError(
 
   const raw = errorText(err);
   if (/failed to fetch/i.test(raw)) {
-    return { fields: {}, form: describeUnreachableSupabase({ env: cfg, pageProtocol, error: err }) };
+    const diagnostic = describeUnreachableSupabase({ env: cfg, pageProtocol, error: err });
+    console.warn("[auth]", diagnostic);
+    return { fields: {}, form: publicMessage(diagnostic, { fallback: UNREACHABLE_PUBLIC, authFallback: UNREACHABLE_PUBLIC }) };
   }
-  return { fields: {}, form: raw || "Something went wrong. Please try again." };
+  // Anything left is unrecognised driver text — "Unauthorized", "JWT expired",
+  // "permission denied for table …". None of that is actionable for a visitor.
+  return { fields: {}, form: publicError(raw, "We couldn't complete that sign-in. Please try again.") };
 }

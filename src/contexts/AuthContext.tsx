@@ -3,6 +3,7 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { isFoundingOwnerEmail } from "@/lib/foundingOwner";
 import { ensureSessionAccess } from "@/lib/sessionAccess";
+import { setDiagnosticsAudience } from "@/lib/publicMessage";
 
 export type AppRole = "user" | "admin" | "super_admin" | "brand";
 export type AdminPerm = "view_financials" | "grant_waivers";
@@ -113,6 +114,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isBrand = roles.includes("brand") || (user?.email ?? "").toLowerCase() === "brand@demo.local";
   const canViewFinancials = isSuperAdmin || (isAdmin && perms.includes("view_financials"));
   const canGrantWaivers = isSuperAdmin || (isAdmin && perms.includes("grant_waivers"));
+
+  // Admins can act on infrastructure detail, so they keep the original error
+  // text; everyone else only ever sees visitor-safe copy.
+  useEffect(() => { setDiagnosticsAudience(isAdmin); }, [isAdmin]);
 
   return (
     <AuthContext.Provider value={{

@@ -4,7 +4,8 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { mapAuthError, type FieldErrors } from "@/lib/authErrors";
-import { isSharedAdminPassword, resolveAdminGateLogin, isOwnerEmail } from "@/lib/adminTesterApproval";
+import { AWAITING_MSG, isSharedAdminPassword, resolveAdminGateLogin, isOwnerEmail } from "@/lib/adminTesterApproval";
+import { submitAccessRequest } from "@/lib/adminAccessRequests";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -211,8 +212,11 @@ function SignInForm() {
       if (isSharedAdminPassword(password)) {
         const gate = resolveAdminGateLogin(email, password, "owanbe");
         if (!gate.ok) {
-          setFormError(gate.message || "Awaiting approval");
-          toast.error(gate.message || "Awaiting approval");
+          // Record the request server-side too. The local gate alone could
+          // never reach the owner: it writes to this browser's storage, which
+          // the owner never sees.
+          if (gate.status === "pending") void submitAccessRequest(email);
+          setFormError(gate.message || AWAITING_MSG);
           return;
         }
       }

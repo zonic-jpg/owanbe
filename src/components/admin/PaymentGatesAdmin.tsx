@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { publicError } from "@/lib/publicMessage";
 import { Loader2, ShieldAlert } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -77,7 +78,7 @@ export function PaymentGatesAdmin() {
       });
     }
     setBusy(null);
-    if (error) return toast.error("Activate failed", { description: error.message });
+    if (error) return toast.error("Couldn't activate that gate", { description: publicError(error) });
     toast.success(`${row.label}: ${row.mode.toUpperCase()} live`);
     refreshUi();
     load();

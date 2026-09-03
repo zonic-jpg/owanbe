@@ -828,9 +828,15 @@ export type Database = {
         Relationships: []
       }
       guests: {
-        Row: { id: string; list_id: string; name: string; phone: string | null; email: string | null; category: string; plus_ones: number; table_no: number | null; rsvp_status: string; invite_status: string; sent_via: string | null; notes: string | null; created_at: string }
-        Insert: { id?: string; list_id: string; name: string; phone?: string | null; email?: string | null; category?: string; plus_ones?: number; table_no?: number | null; rsvp_status?: string; invite_status?: string; sent_via?: string | null; notes?: string | null; created_at?: string }
-        Update: { id?: string; list_id?: string; name?: string; phone?: string | null; email?: string | null; category?: string; plus_ones?: number; table_no?: number | null; rsvp_status?: string; invite_status?: string; sent_via?: string | null; notes?: string | null; created_at?: string }
+        Row: { id: string; list_id: string; name: string; phone: string | null; email: string | null; category: string; plus_ones: number; table_no: number | null; rsvp_status: string; invite_status: string; sent_via: string | null; sent_at: string | null; send_error: string | null; notes: string | null; created_at: string }
+        Insert: { id?: string; list_id: string; name: string; phone?: string | null; email?: string | null; category?: string; plus_ones?: number; table_no?: number | null; rsvp_status?: string; invite_status?: string; sent_via?: string | null; sent_at?: string | null; send_error?: string | null; notes?: string | null; created_at?: string }
+        Update: { id?: string; list_id?: string; name?: string; phone?: string | null; email?: string | null; category?: string; plus_ones?: number; table_no?: number | null; rsvp_status?: string; invite_status?: string; sent_via?: string | null; sent_at?: string | null; send_error?: string | null; notes?: string | null; created_at?: string }
+        Relationships: []
+      }
+      admin_access_requests: {
+        Row: { id: number; email: string; identity: string | null; app: string; status: string; requested_at: string; decided_at: string | null; decided_by: string | null; note: string | null }
+        Insert: { id?: number; email: string; identity?: string | null; app?: string; status?: string; requested_at?: string; decided_at?: string | null; decided_by?: string | null; note?: string | null }
+        Update: { id?: number; email?: string; identity?: string | null; app?: string; status?: string; requested_at?: string; decided_at?: string | null; decided_by?: string | null; note?: string | null }
         Relationships: []
       }
       landing_content: {
@@ -1453,6 +1459,20 @@ export type Database = {
       }
       claim_super_admin: { Args: never; Returns: undefined }
       ensure_session_access: { Args: never; Returns: Json }
+      founding_owner_email: { Args: never; Returns: string }
+      request_admin_access: {
+        Args: { _email: string; _identity?: string | null; _app?: string }
+        Returns: Json
+      }
+      admin_access_status: {
+        Args: { _email: string; _app?: string }
+        Returns: Json
+      }
+      list_admin_access_requests: { Args: { _app?: string | null }; Returns: Json }
+      decide_admin_access: {
+        Args: { _email: string; _decision: string; _app?: string }
+        Returns: Json
+      }
       current_published_mode: { Args: never; Returns: string }
       ensure_demo_access: { Args: never; Returns: boolean }
       ensure_demo_role: {

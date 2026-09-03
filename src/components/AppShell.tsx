@@ -44,10 +44,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 font-apple pt-[env(safe-area-inset-top)]">
         <div className="container flex items-center justify-between h-14 sm:h-16 gap-2 min-w-0">
-          <div className="flex items-center gap-3 sm:gap-8 min-w-0">
-            <span className="inline-flex items-center justify-center h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-white shadow-sm ring-1 ring-black/5 shrink-0">
-              <Logo />
-            </span>
+          <div className="flex items-center gap-4 sm:gap-8 min-w-0">
+            <Logo size="sm" className="shrink-0" />
             <nav className="hidden md:flex items-center gap-1">
               {items.map((it) => (
                 <NavLink

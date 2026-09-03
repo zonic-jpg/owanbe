@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Save, Trash2, Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
+import { publicError } from "@/lib/publicMessage";
 import { CsvImport } from "@/components/admin/CsvImport";
 
 type City = {
@@ -45,7 +46,7 @@ export function CitiesAdmin() {
       .order("rank", { ascending: true, nullsFirst: false })
       .order("population", { ascending: false })
       .limit(1000);
-    if (error) toast.error("Failed to load", { description: error.message });
+    if (error) toast.error("Couldn't load cities", { description: publicError(error) });
     setRows((data ?? []) as City[]);
     setLoading(false);
   };
@@ -56,7 +57,7 @@ export function CitiesAdmin() {
     setBusy(id);
     const { error } = await supabase.from("cities").update(patch as import("@/integrations/supabase/types").Database["public"]["Tables"]["cities"]["Update"]).eq("id", id);
     setBusy(null);
-    if (error) return toast.error("Save failed", { description: error.message });
+    if (error) return toast.error("Couldn't save that change", { description: publicError(error) });
     toast.success("Saved");
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   };
@@ -64,7 +65,7 @@ export function CitiesAdmin() {
   const remove = async (id: string) => {
     if (!confirm("Delete this city?")) return;
     const { error } = await supabase.from("cities").delete().eq("id", id);
-    if (error) return toast.error("Delete failed", { description: error.message });
+    if (error) return toast.error("Couldn't delete that city", { description: publicError(error) });
     setRows((rs) => rs.filter((r) => r.id !== id));
   };
 
@@ -80,7 +81,7 @@ export function CitiesAdmin() {
       is_active: draft.is_active,
     };
     const { error } = await supabase.from("cities").insert(payload as import("@/integrations/supabase/types").Database["public"]["Tables"]["cities"]["Insert"]);
-    if (error) return toast.error("Add failed", { description: error.message });
+    if (error) return toast.error("Couldn't add that city", { description: publicError(error) });
     toast.success("City added");
     setDraft(empty);
     load();

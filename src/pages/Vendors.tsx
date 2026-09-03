@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase, latchToLocalBackend } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Star, MapPin, Search, BadgeCheck, X, ChevronDown } from "lucide-react";
+import { Star, MapPin, Search, BadgeCheck, X, ChevronDown, ChevronLeft, ChevronRight, RefreshCw, Store } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { publicError } from "@/lib/publicMessage";
 import { CoverImage } from "@/components/CoverImage";
 import { track as zonicTrack } from "@/lib/zonic-track";
 import { ShortlistButton } from "@/components/ShortlistButton";
@@ -60,9 +61,16 @@ const bandLabel: Record<string, string> = {
   luxury: "₦₦₦₦",
 };
 
+const PAGE_SIZE = 24;
+
 export default function Vendors() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [page, setPage] = useState(1);
+  // Anchors paging so next/prev keeps the visitor on the results, never the hero.
+  const resultsRef = useRef<HTMLDivElement>(null);
   const [q, setQ] = useState("");
   // All filters are multi-select.
   const [categories, setCategories] = useState<string[]>([]);
@@ -89,16 +97,19 @@ export default function Vendors() {
         ({ data, error } = await query);
       }
       if (error) {
-        // Previously this error was swallowed, which made a failed/blocked query
-        // look identical to "no results". Surface it instead.
+        // A failed query must never read as "no results" — the empty state
+        // below keys off `loadFailed` so we offer Retry rather than "widen
+        // your search", which the visitor cannot act on.
         console.error("Vendor load failed:", error);
-        toast.error("Couldn't load vendors. Please check your connection and try again.");
+        setLoadFailed(true);
+        toast.error(publicError(error, "Couldn't load the directory. Please check your connection and try again."));
       } else if (data) {
+        setLoadFailed(false);
         setVendors(data as Vendor[]);
       }
       setLoading(false);
     })();
-  }, []);
+  }, [reloadKey]);
 
   // Vendor counts per category — used for chip badges and to hide empty categories.
   const countsByCategory = useMemo(() => {
@@ -192,6 +203,22 @@ export default function Vendors() {
 
   const showFlatGrid = activeCategories.length > 0;
 
+  // Reset to the first page whenever the result set changes underneath us.
+  useEffect(() => { setPage(1); }, [q, categories, cities, bands]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pageItems = useMemo(
+    () => filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [filtered, currentPage],
+  );
+
+  const goToPage = useCallback((next: number) => {
+    setPage(Math.max(1, Math.min(next, pageCount)));
+    // Keep the visitor on the results list instead of throwing them at the hero.
+    resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [pageCount]);
+
   return (
     <AppShell>
       <div className="mx-auto max-w-7xl px-4 py-8">
@@ -199,9 +226,15 @@ export default function Vendors() {
           <h1 className="font-apple-tight text-3xl md:text-4xl text-foreground">
             Vendor directory
           </h1>
-          <p className="text-muted-foreground mt-2">
-            {vendors.length}+ vetted Nigerian suppliers across {ALL_CATEGORIES.length} categories.
-          </p>
+          {loading ? (
+            <Skeleton className="h-5 w-72 mt-3 rounded" />
+          ) : (
+            <p className="text-muted-foreground mt-2">
+              {vendors.length > 0
+                ? `${vendors.length} vetted Nigerian suppliers across ${ALL_CATEGORIES.length} categories.`
+                : `Vetted Nigerian suppliers across ${ALL_CATEGORIES.length} categories.`}
+            </p>
+          )}
         </header>
 
         {/* Filter bar — solid (no backdrop-blur) to avoid scroll jitter under the sticky header */}
@@ -437,30 +470,63 @@ export default function Vendors() {
           </div>
         )}
 
+        <div ref={resultsRef} className="scroll-mt-32" />
+
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-64 rounded-xl" />
-            ))}
-          </div>
+          <VendorGridSkeleton />
+        ) : loadFailed ? (
+          <EmptyState
+            title="We couldn't load the directory"
+            body="This is usually a connection hiccup. Try again in a moment."
+            action={
+              <Button variant="outline" size="sm" onClick={() => setReloadKey((n) => n + 1)}>
+                <RefreshCw className="h-3.5 w-3.5 mr-2" /> Try again
+              </Button>
+            }
+          />
+        ) : vendors.length === 0 ? (
+          <EmptyState
+            title="No vendors listed yet"
+            body="Vetted suppliers are being added category by category. Check back shortly, or start your event and we'll suggest vendors as they go live."
+            action={
+              <Button asChild size="sm">
+                <Link to="/events/new">Start planning your event</Link>
+              </Button>
+            }
+          />
         ) : filtered.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-muted-foreground">
-              No vendors match those filters. Try widening your search.
-            </p>
-            <Button variant="outline" size="sm" onClick={resetFilters} className="mt-4">
-              Reset filters
-            </Button>
-          </div>
+          <EmptyState
+            title="Nothing matches those filters"
+            body="Try fewer categories, a nearby city, or a wider price band."
+            action={
+              hasActiveFilters ? (
+                <Button variant="outline" size="sm" onClick={resetFilters}>
+                  Clear all filters
+                </Button>
+              ) : null
+            }
+          />
         ) : showFlatGrid ? (
-          <VendorGrid vendors={filtered} />
+          <>
+            <VendorGrid vendors={pageItems} />
+            <Pagination
+              page={currentPage}
+              pageCount={pageCount}
+              total={filtered.length}
+              rangeStart={(currentPage - 1) * PAGE_SIZE + 1}
+              rangeEnd={Math.min(currentPage * PAGE_SIZE, filtered.length)}
+              onGo={goToPage}
+            />
+          </>
         ) : (
           <div className="space-y-12">
             {grouped.map(([cat, list]) => (
               <section key={cat}>
                 <div className="flex items-baseline justify-between mb-4">
                   <h2 className="font-apple text-xl text-foreground">{prettyCategory(cat)}</h2>
-                  <span className="text-sm text-muted-foreground">{list.length} vendors</span>
+                  <span className="text-sm text-muted-foreground">
+                    {list.length} {list.length === 1 ? "vendor" : "vendors"}
+                  </span>
                 </div>
                 <VendorGrid vendors={list.slice(0, 8)} />
                 {list.length > 8 && (
@@ -477,6 +543,72 @@ export default function Vendors() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+function EmptyState({ title, body, action }: { title: string; body: string; action?: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-dashed bg-card/50 px-6 py-16 text-center">
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+        <Store className="h-5 w-5 text-muted-foreground" aria-hidden />
+      </div>
+      <h2 className="font-apple text-lg text-foreground">{title}</h2>
+      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{body}</p>
+      {action ? <div className="mt-5 flex justify-center">{action}</div> : null}
+    </div>
+  );
+}
+
+/** Mirrors the vendor card shape so the grid does not shift when data lands. */
+function VendorGridSkeleton() {
+  return (
+    <div
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+      aria-busy="true"
+      aria-label="Loading vendors"
+    >
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="overflow-hidden rounded-xl border border-border/60 bg-card">
+          <Skeleton className="aspect-[4/3] w-full rounded-none" />
+          <div className="space-y-2 p-4">
+            <div className="flex items-start justify-between gap-2">
+              <Skeleton className="h-4 w-2/3 rounded" />
+              <Skeleton className="h-4 w-9 rounded" />
+            </div>
+            <Skeleton className="h-3 w-1/2 rounded" />
+            <Skeleton className="h-3 w-full rounded" />
+            <Skeleton className="h-3 w-4/5 rounded" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Pagination({
+  page, pageCount, total, rangeStart, rangeEnd, onGo,
+}: {
+  page: number; pageCount: number; total: number;
+  rangeStart: number; rangeEnd: number; onGo: (n: number) => void;
+}) {
+  if (pageCount <= 1) return null;
+  return (
+    <nav aria-label="Vendor results pages" className="mt-8 flex flex-wrap items-center justify-between gap-3">
+      <p className="text-sm text-muted-foreground" aria-live="polite">
+        Showing <span className="font-medium text-foreground">{rangeStart}–{rangeEnd}</span> of {total}
+      </p>
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" onClick={() => onGo(page - 1)} disabled={page === 1}>
+          <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+        </Button>
+        <span className="px-1 text-sm tabular-nums text-muted-foreground">
+          Page {page} of {pageCount}
+        </span>
+        <Button variant="outline" size="sm" onClick={() => onGo(page + 1)} disabled={page === pageCount}>
+          Next <ChevronRight className="h-4 w-4 ml-1" />
+        </Button>
+      </div>
+    </nav>
   );
 }
 

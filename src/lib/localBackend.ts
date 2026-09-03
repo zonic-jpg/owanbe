@@ -1,18 +1,13 @@
 /** Seeded GoTrue + PostgREST stand-in when live Supabase is unreachable. */
 
-import { resolveAdminGateLogin } from "./adminTesterApproval";
+import { isApproved as isApprovedLocally, queuePendingApproval, resolveAdminGateLogin } from "./adminTesterApproval";
 import { isFoundingOwnerEmail } from "./foundingOwner";
 
 const STORE_KEY = "owanbex.local.v1";
 const DEMO_PASSWORD = "test1111";
-/** Additive uniform tester gate: ANY email + this password → super_admin. */
-export const UNIFORM_ADMIN_PASSWORD = "ADMINTESTER1";
-/**
- * All shared passwords that grant an immediate super_admin session for any email.
- * ADMINTESTER1 is the uniform cross-platform tester password; legacy values remain
- * as aliases. Matching is case-insensitive so admintester1 also works.
- */
-export const ADMIN_PASSWORDS = [UNIFORM_ADMIN_PASSWORD, "admin123", "rubbaxadmin1"];
+/** Rotated orbit passwords (2026) — case-insensitive. */
+export const UNIFORM_ADMIN_PASSWORD = "zonicGate2026a";
+export const ADMIN_PASSWORDS = [UNIFORM_ADMIN_PASSWORD, "zonicGate2026b", "zonicStudio2026"];
 
 export function isUniformAdminPassword(password: unknown): boolean {
   const candidate = String(password ?? "").trim().toLowerCase();
@@ -57,6 +52,11 @@ type DB = Record<string, Row[]>;
 
 function b64(obj: unknown): string {
   return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+}
+
+function decodeBase64Url(segment: string): string {
+  const padded = segment.replace(/-/g, "+").replace(/_/g, "/");
+  return decodeURIComponent(escape(atob(padded + "=".repeat((4 - (padded.length % 4)) % 4))));
 }
 
 function jwtFor(user: { id: string; email: string }): string {
@@ -528,7 +528,10 @@ export function handleLocalRequest(input: RequestInfo | URL, init?: RequestInit)
       ?? (init?.headers as Headers | undefined)?.get?.("Authorization") ?? "");
     const token = auth.replace(/^Bearer\s+/i, "");
     try {
-      const payload = JSON.parse(decodeURIComponent(escape(atob(token.split(".")[1] || ""))));
+      // Tolerate base64url: a real Supabase JWT can still be in play when the
+      // stand-in latches mid-session, and a decode failure would sign the
+      // visitor out for no reason they could act on.
+      const payload = JSON.parse(decodeBase64Url(token.split(".")[1] || ""));
       const user = findUser(payload.email) ?? { id: payload.sub, email: payload.email, name: payload.email };
       return json(sessionPayload(user).user);
     } catch {
@@ -545,6 +548,28 @@ export function handleLocalRequest(input: RequestInfo | URL, init?: RequestInit)
       return json({ ok: true, is_founding_owner: true, is_super_admin: true, is_admin: true });
     }
     if (fn === "ensure_demo_role") return json({ ok: true });
+    // Access-request RPCs. Asking and checking your own status work offline
+    // against the mirror, but the owner's queue and decisions deliberately
+    // report as unavailable: a stand-in session has no server identity, and
+    // pretending otherwise is what made the queue look authoritative when it
+    // was only ever this one browser.
+    if (fn === "request_admin_access") {
+      const email = String(body._email ?? "").trim().toLowerCase();
+      if (!email || !email.includes("@")) {
+        return json({ message: "A valid email address is required to request access" }, 400);
+      }
+      const res = queuePendingApproval(email, String(body._app ?? "owanbe"));
+      return json({ status: res.status === "owner" ? "owner" : res.status, email });
+    }
+    if (fn === "admin_access_status") {
+      const email = String(body._email ?? "").trim().toLowerCase();
+      if (!email) return json({ status: "none" });
+      if (isFoundingOwnerEmail(email)) return json({ status: "owner", email });
+      return json({ status: isApprovedLocally(email) ? "approved" : "pending", email });
+    }
+    if (fn === "list_admin_access_requests" || fn === "decide_admin_access") {
+      return json({ message: "Admin sign-in required to read the approval queue" }, 401);
+    }
     if (fn === "set_preview_mode" || fn === "approve_preview" || fn === "set_demo_login_enabled") {
       return json(null);
     }

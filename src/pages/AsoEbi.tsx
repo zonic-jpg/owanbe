@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
+import { publicError } from "@/lib/publicMessage";
 import { ArrowLeft, BadgeCheck, Check, Crown, Loader2, MessageCircle, ShieldCheck, ShoppingBag, Sparkles, Star, Users } from "lucide-react";
 import { GateGuard } from "@/components/GateGuard";
 import { bestQuoteSavings, distributionStats, rankQuotes, rfqMessage, type QuoteRow } from "@/lib/aso-ebi";
@@ -82,7 +83,7 @@ function AsoEbiInner() {
       deadline: draft.deadline || null, requirements: draft.requirements || null,
     }).select("*").single();
     setBusy(null);
-    if (error) return toast.error("Could not create campaign", { description: error.message });
+    if (error) return toast.error("Could not open the campaign", { description: publicError(error) });
     setCampaign(data as Campaign);
     toast.success("Aso-ebi campaign opened — now send your requirements to vetted providers");
   };
@@ -102,7 +103,7 @@ function AsoEbiInner() {
       delivery_days: Number(quoteDraft.delivery_days) || null, notes: quoteDraft.notes || null,
     }).select("*").single();
     setBusy(null);
-    if (error) return toast.error("Could not record quote", { description: error.message });
+    if (error) return toast.error("Could not record that quote", { description: publicError(error) });
     setQuotes((q) => [...q, data as QuoteRow]);
     setQuoteDraft({ provider_id: "", fabric: "", price_per_unit: "", min_order: "1", delivery_days: "", notes: "" });
     setQuoteOpen(false);
@@ -129,7 +130,7 @@ function AsoEbiInner() {
     }).select("*").single();
     if (!error) await supabase.from("aso_ebi_quotes").update({ status: "accepted" }).eq("id", quote.id);
     setBusy(null);
-    if (error) return toast.error("Could not create order", { description: error.message });
+    if (error) return toast.error("Could not create that order", { description: publicError(error) });
     setOrders((o) => [data as OrderRow, ...o]);
     setQuotes((qs) => qs.map((q) => (q.id === quote.id ? { ...q, status: "accepted" } : q)));
     toast.success("Order created — proceed to payment in the Orders tab");
@@ -145,9 +146,16 @@ function AsoEbiInner() {
       if (error) throw error;
       const resp = data as { checkoutUrl?: string; error?: string };
       if (resp?.checkoutUrl) window.location.href = resp.checkoutUrl;
-      else toast.error("Checkout unavailable", { description: resp?.error ?? "No payment provider configured. Mark as paid manually once settled by transfer." });
+      else toast.error("Checkout unavailable", {
+        description: publicError(
+          resp?.error,
+          "Card checkout isn't available right now. You can pay the provider by transfer and mark this order paid.",
+        ),
+      });
     } catch (e) {
-      toast.error("Payment failed to start", { description: String((e as { message?: string })?.message ?? e) });
+      toast.error("Couldn't start checkout", {
+        description: publicError(e, "Card checkout isn't available right now. Please try again shortly."),
+      });
     }
     setBusy(null);
   };
@@ -156,8 +164,11 @@ function AsoEbiInner() {
     setBusy(order.id);
     const { error } = await supabase.from("aso_ebi_orders").update({ payment_status: "paid", payment_provider: "manual_transfer" }).eq("id", order.id);
     setBusy(null);
-    if (error) return toast.error("Update failed", { description: error.message });
+    if (error) return toast.error("Couldn't mark that order paid", { description: publicError(error) });
     setOrders((os) => os.map((o) => (o.id === order.id ? { ...o, payment_status: "paid" } : o)));
+    toast.success("Order marked paid", {
+      description: `Recorded as a manual transfer at ${new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}.`,
+    });
   };
 
   const addGuestOrder = async (guestId: string) => {
@@ -166,13 +177,19 @@ function AsoEbiInner() {
     const { data, error } = await supabase.from("aso_ebi_guest_orders")
       .insert({ campaign_id: campaign.id, guest_id: guestId, qty: 1, amount: unit })
       .select("*, guests(name)").single();
-    if (error) return toast.error(error.message.includes("duplicate") ? "Guest already on the aso-ebi list" : "Could not add", { description: error.message });
+    if (error) {
+      // A duplicate is the one case the visitor can act on, so it keeps its
+      // own message instead of being flattened into the generic error.
+      return error.message.includes("duplicate")
+        ? toast.error("That guest is already on the aso-ebi list")
+        : toast.error("Couldn't add that guest", { description: publicError(error) });
+    }
     setGuestOrders((g) => [...g, data as GuestOrder]);
   };
 
   const updateGuestOrder = async (id: string, patch: Partial<GuestOrder>) => {
     const { error } = await supabase.from("aso_ebi_guest_orders").update(patch).eq("id", id);
-    if (error) return toast.error("Update failed", { description: error.message });
+    if (error) return toast.error("Couldn't save that change", { description: publicError(error) });
     setGuestOrders((g) => g.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   };
 

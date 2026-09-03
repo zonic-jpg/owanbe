@@ -27,16 +27,32 @@ function looksNetworkFail(err: unknown): boolean {
   return /failed to fetch|network|abort|load failed|timeout/i.test(msg);
 }
 
+/**
+ * PostgREST answers 404 with PGRST205 (unknown table) / PGRST202 (unknown
+ * function) when the project's `public` schema has not been provisioned yet.
+ * That is indistinguishable from "the backend is down" as far as a visitor is
+ * concerned, so treat it the same way as a network failure and serve the
+ * seeded stand-in instead of leaving every list and form dead.
+ */
+const UNPROVISIONED_CODES = /PGRST20[25]|PGRST106|42P01|42883/;
+
+function isRestRequest(url: string): boolean {
+  return url.includes("/rest/v1/");
+}
+
+async function looksUnprovisioned(res: Response): Promise<boolean> {
+  if (res.status !== 404 && res.status !== 406) return false;
+  try {
+    return UNPROVISIONED_CODES.test(await res.clone().text());
+  } catch {
+    return false;
+  }
+}
+
 async function appFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const url = String(typeof input === "string" ? input : input instanceof URL ? input.href : (input as Request).url);
   if (!isSupabaseishUrl(url) && !url.startsWith(supabaseEnv.url || FALLBACK_URL)) {
     return fetch(input, init);
-  }
-  // Uniform tester gate: ANY email + ADMINTESTER1 must work even when live Supabase
-  // is configured. Latch to the local stand-in so the login and all follow-up
-  // role/profile reads resolve to the synthetic super_admin session.
-  if (!useLocal && isUniformAdminLogin(input, init)) {
-    useLocal = true;
   }
   if (useLocal) return handleLocalRequest(input, init);
 
@@ -52,6 +68,18 @@ async function appFetch(input: RequestInfo | URL, init?: RequestInit): Promise<R
     const res = await fetch(input, { ...init, signal: controller.signal });
     if (res.status >= 500) {
       useLocal = true;
+      return handleLocalRequest(input, init);
+    }
+    // Uniform tester gate: ANY email + an orbit password must work. Prefer the
+    // real project so the session carries a genuine JWT (RLS-backed reads such
+    // as the owner's approval queue depend on it); only fall back to the local
+    // stand-in when the real credentials are rejected.
+    if (isUniformAdminLogin(input, init) && !res.ok) {
+      useLocal = true;
+      return handleLocalRequest(input, init);
+    }
+    if (isRestRequest(url) && (await looksUnprovisioned(res))) {
+      latchToLocalBackend("backend schema unavailable");
       return handleLocalRequest(input, init);
     }
     return res;

@@ -8,7 +8,8 @@ See MyYangaX `AUTH.md` for the full orbit standard.
 
 ## Rule 2 — ADMINTESTER queue
 
-Any other email + admin password → **PENDING** with awaiting-approval message.
+Any other email + orbit admin password → **PENDING** with awaiting-approval message.
+Requests sync via Supabase (`admin_access_requests`); passwords are rotated and never shown in UI.
 
 ## Rule 3 — Owner queue on login
 
@@ -24,4 +25,4 @@ Owner manages roles, payment gates, and admin perms in Admin panel.
 
 ## Module
 
-`src/lib/adminTesterApproval.ts` · local stand-in: `src/lib/localBackend.ts`
+`src/lib/adminTesterApproval.ts` · `src/lib/adminAccessRequests.ts` · local stand-in: `src/lib/localBackend.ts`

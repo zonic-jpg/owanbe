@@ -3,6 +3,8 @@ export interface GuestRow {
   id: string; name: string; phone: string | null; email: string | null;
   category: string; plus_ones: number; table_no: number | null;
   rsvp_status: string; invite_status: string; sent_via: string | null;
+  /** Receipt for the last successful send, and the reason the last one failed. */
+  sent_at?: string | null; send_error?: string | null;
   notes: string | null;
 }
 
@@ -29,6 +31,9 @@ export function guestStats(rows: GuestRow[]) {
   const headcount = rows.reduce((n, g) => n + 1 + (g.plus_ones || 0), 0);
   const vip = rows.filter((g) => g.category === "vip").length;
   const sent = rows.filter((g) => g.invite_status === "sent").length;
+  const failed = rows.filter((g) => g.invite_status === "failed").length;
   const confirmed = rows.filter((g) => g.rsvp_status === "yes").length;
-  return { total, headcount, vip, sent, pending: total - sent, confirmed };
+  // "Pending" now means genuinely not attempted — a failed send is its own
+  // state, not something quietly folded back into the pending count.
+  return { total, headcount, vip, sent, failed, pending: total - sent - failed, confirmed };
 }

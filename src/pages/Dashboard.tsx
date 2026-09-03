@@ -9,6 +9,7 @@ import { Plus, Calendar, MapPin, Users, Sparkles, Wand2, Loader2, Building2 } fr
 import { formatNairaCompact } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { publicError } from "@/lib/publicMessage";
 import { GateGuard } from "@/components/GateGuard";
 import { createSampleEvent } from "@/lib/sample-event";
 import { useNavigate } from "react-router-dom";
@@ -66,7 +67,9 @@ function DashboardInner() {
       toast.success("Sample event created", { description: `${res.tiers} tiers • ${res.items} budget items` });
       navigate(`/events/${res.eventId}`);
     } catch (e) {
-      toast.error("Could not create sample event", { description: e?.message });
+      toast.error("Could not create sample event", {
+        description: publicError(e, "We couldn't set up the sample event. Please try again."),
+      });
     } finally {
       setSeeding(false);
     }
