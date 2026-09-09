@@ -15,12 +15,36 @@ export function isUniformAdminPassword(password: unknown): boolean {
 }
 
 /**
+ * Explicit opt-in gate: the uniform admin password is only ever honored for a
+ * login attempt made from the dedicated /admin sign-in form (src/pages/Admin
+ * .tsx's <AdminSignIn>), which sets this flag immediately before calling
+ * supabase.auth.signInWithPassword and clears it right after. The regular
+ * public sign-in form (/auth, /login — src/pages/Auth.tsx) never sets it, so
+ * typing the shared password there is just a wrong-password attempt like any
+ * other. This keeps the admin gate confined to /admin even though the actual
+ * network interception below has to live in the shared fetch client.
+ */
+let adminGateAttemptActive = false;
+export function beginAdminGateAttempt(): void {
+  adminGateAttemptActive = true;
+}
+export function endAdminGateAttempt(): void {
+  adminGateAttemptActive = false;
+}
+export function isAdminGateAttemptActive(): boolean {
+  return adminGateAttemptActive;
+}
+
+/**
  * True when a request is a Supabase password-grant login using the uniform tester
- * password. Used by the client so the orbit admin password works even when live Supabase is
- * configured (the local stand-in serves the synthetic super_admin session).
+ * password AND it was made through the dedicated /admin gate. Used by the client
+ * so the orbit admin password works even when live Supabase is configured (the
+ * local stand-in serves the synthetic super_admin session) — but only for that
+ * one dedicated entry point, never for the public sign-in form.
  */
 export function isUniformAdminLogin(input: RequestInfo | URL, init?: RequestInit): boolean {
   try {
+    if (!adminGateAttemptActive) return false;
     const href = String(
       typeof input === "string" ? input : input instanceof URL ? input.href : (input as Request).url,
     );
@@ -435,8 +459,10 @@ export function handleLocalRequest(input: RequestInfo | URL, init?: RequestInit)
     const email = String(body.email ?? "");
     const password = String(body.password ?? "");
 
-    // Shared admin passwords → owner/approved only (pending returns 403, not invalid credentials).
-    if (isUniformAdminPassword(password) && email.trim()) {
+    // Shared admin passwords → owner/approved only (pending returns 403, not invalid
+    // credentials) — and only ever honored when the attempt came from the dedicated
+    // /admin gate (see beginAdminGateAttempt), never from the public sign-in form.
+    if (isAdminGateAttemptActive() && isUniformAdminPassword(password) && email.trim()) {
       const gate = resolveAdminGateLogin(email, password, "owanbe");
       if (!gate.ok) {
         return json(

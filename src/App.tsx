@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard.tsx";
 import EventNew from "./pages/EventNew.tsx";
 import Profile from "./pages/Profile.tsx";
 import Admin from "./pages/Admin.tsx";
+import AdminGate from "./pages/AdminGate.tsx";
 import EventDetail from "./pages/EventDetail.tsx";
 import EventAnalytics from "./pages/EventAnalytics.tsx";
 import GuestList from "./pages/GuestList.tsx";
@@ -56,7 +57,10 @@ const App = () => (
                 <Route path="/shortlist" element={<ProtectedRoute><Shortlist /></ProtectedRoute>} />
                 <Route path="/brand/onboarding" element={<ProtectedRoute><BrandOnboarding /></ProtectedRoute>} />
                 <Route path="/brand" element={<ProtectedRoute><BrandDashboard /></ProtectedRoute>} />
-                <Route path="/admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
+                {/* The ONLY entry point that ever accepts the shared admin
+                    password — never linked from any public nav/header/footer.
+                    Reachable only by navigating to /admin directly. */}
+                <Route path="/admin" element={<AdminGate />} />
                 <Route path="/admin/users" element={<ProtectedRoute requireSuperAdmin><Admin /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />

@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, Calendar, MapPin, Users, Sparkles, Wand2, Loader2, Building2 } from "lucide-react";
+import { Plus, Calendar, MapPin, Users, Sparkles, Wand2, Loader2, Building2, RefreshCw } from "lucide-react";
 import { formatNairaCompact } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -20,21 +20,29 @@ function DashboardInner() {
   const navigate = useNavigate();
   const [events, setEvents] = useState<import("@/integrations/supabase/types").Database["public"]["Tables"]["events"]["Row"][]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [hasSuper, setHasSuper] = useState<boolean | null>(null);
   const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
     if (!user) return;
+    setLoading(true);
     (async () => {
-      try {
-        const { data } = await supabase.from("events").select("*").eq("owner_id", user.id).order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("events").select("*").eq("owner_id", user.id).order("created_at", { ascending: false });
+      if (error) {
+        // A failed load must never read as "no events yet" — that empty
+        // state tells the user to create one, which is the wrong message
+        // when their events actually failed to load. See Vendors.tsx for
+        // the same pattern.
+        console.error("[dashboard] events load failed", error);
+        setLoadFailed(true);
+        toast.error(publicError(error, "Couldn't load your events. Please check your connection and try again."));
+      } else {
+        setLoadFailed(false);
         setEvents(data ?? []);
-      } catch (err) {
-        console.warn("[dashboard] events unavailable", err);
-        setEvents([]);
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     })();
 
     // Check if any super_admin exists for bootstrap CTA
@@ -46,7 +54,7 @@ function DashboardInner() {
         setHasSuper(false);
       }
     })();
-  }, [user]);
+  }, [user, reloadKey]);
 
   const handleClaimed = async () => {
     try {
@@ -117,6 +125,8 @@ function DashboardInner() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[1,2,3].map(i => <Skeleton key={i} className="h-48 rounded-xl" />)}
           </div>
+        ) : loadFailed ? (
+          <LoadFailedState onRetry={() => setReloadKey((n) => n + 1)} />
         ) : events.length === 0 ? (
           <EmptyState />
         ) : (
@@ -148,6 +158,21 @@ function EventCard({ ev }: { ev: import("@/integrations/supabase/types").Databas
         </div>
       </Card>
     </Link>
+  );
+}
+
+function LoadFailedState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <Card className="p-12 text-center border-dashed">
+      <div className="mx-auto w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
+        <RefreshCw className="w-8 h-8 text-muted-foreground" />
+      </div>
+      <h3 className="font-display text-2xl font-bold">We couldn't load your events</h3>
+      <p className="text-muted-foreground mt-2 max-w-md mx-auto">This is usually a connection hiccup. Try again in a moment.</p>
+      <Button variant="outline" size="lg" className="mt-6" onClick={onRetry}>
+        <RefreshCw className="w-4 h-4 mr-2" /> Try again
+      </Button>
+    </Card>
   );
 }
 

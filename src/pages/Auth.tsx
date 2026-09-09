@@ -4,8 +4,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { mapAuthError, type FieldErrors } from "@/lib/authErrors";
-import { AWAITING_MSG, isSharedAdminPassword, resolveAdminGateLogin, isOwnerEmail } from "@/lib/adminTesterApproval";
-import { submitAccessRequest } from "@/lib/adminAccessRequests";
+import { isOwnerEmail } from "@/lib/adminTesterApproval";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -209,18 +208,9 @@ function SignInForm() {
     inFlight.current = true;
     setLoading(true);
     try {
-      if (isSharedAdminPassword(password)) {
-        const gate = resolveAdminGateLogin(email, password, "owanbe");
-        if (!gate.ok) {
-          // Record the request server-side too. The local gate alone could
-          // never reach the owner: it writes to this browser's storage, which
-          // the owner never sees.
-          if (gate.status === "pending") void submitAccessRequest(email);
-          setFormError(gate.message || AWAITING_MSG);
-          return;
-        }
-      }
-      // Shared admin passwords latch to localBackend soft session (never "invalid credentials").
+      // This is the public sign-in form (also mounted at /login) — it never
+      // accepts the shared admin password. The dedicated /admin gate
+      // (src/pages/Admin.tsx's <AdminSignIn>) is the only place that does.
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         const mapped = mapAuthError(error);
@@ -229,8 +219,8 @@ function SignInForm() {
         return;
       }
       toast.success("Welcome back!");
-      if (isOwnerEmail(email) || isSharedAdminPassword(password)) {
-        navigate({ pathname: "/admin", hash: isOwnerEmail(email) ? "admintester-queue" : undefined }, { replace: true });
+      if (isOwnerEmail(email)) {
+        navigate({ pathname: "/admin", hash: "admintester-queue" }, { replace: true });
       } else {
         navigate("/dashboard", { replace: true });
       }
@@ -526,12 +516,13 @@ function useResendVerification() {
 
 const DEMO_PASSWORD = "test1111";
 
-type DemoRole = "user" | "brand" | "admin";
+// Admin is deliberately not offered here — this is the public sign-in page.
+// A demo admin login lives on the dedicated /admin gate instead.
+type DemoRole = "user" | "brand";
 
 const DEMO_ACCOUNTS: Record<DemoRole, { email: string; name: string; dest: string }> = {
   user: { email: "user@demo.local", name: "Adunni Ogunleye", dest: "/dashboard" },
   brand: { email: "brand@demo.local", name: "Adunni Events", dest: "/brand" },
-  admin: { email: "admin@demo.local", name: "Chidi Okonkwo", dest: "/admin" },
 };
 
 // One-tap tester logins — shown in dev, or when VITE_ENABLE_DEMO_LOGINS=true.
@@ -595,7 +586,6 @@ function DemoAccountButton() {
   const roles: { key: DemoRole; label: string }[] = [
     { key: "user", label: "User" },
     { key: "brand", label: "Brand" },
-    { key: "admin", label: "Admin" },
   ];
 
   return (
@@ -603,7 +593,7 @@ function DemoAccountButton() {
       <p className="text-center text-xs font-medium uppercase tracking-wider text-neutral-400">
         Tester access
       </p>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         {roles.map((r) => (
           <button
             key={r.key}

@@ -36,6 +36,38 @@ function looksNetworkFail(err: unknown): boolean {
  */
 const UNPROVISIONED_CODES = /PGRST20[25]|PGRST106|42P01|42883/;
 
+/**
+ * A stale/foreign session token (e.g. left over from the shared orbit-gate
+ * flow, or from testing against a different project) fails Postgres/GoTrue's
+ * signature check on every subsequent authenticated click. Left alone, that
+ * repeats the raw crypto error on every link the visitor touches. Detect it
+ * once and drop the bad session so the next request goes out signed-out
+ * instead of broken, rather than looping on the same failure forever.
+ */
+const JWT_FAILURE_PATTERN = /JWSError|JWSInvalidSignature|invalid JWT|invalid signature|PGRST301|JWTExpired/i;
+let clearedBadSession = false;
+
+async function looksLikeJwtFailure(res: Response): Promise<boolean> {
+  if (res.status !== 401 && res.status !== 403) return false;
+  try {
+    return JWT_FAILURE_PATTERN.test(await res.clone().text());
+  } catch {
+    return false;
+  }
+}
+
+function clearCorruptSession(reason: string): void {
+  if (clearedBadSession || typeof window === "undefined") return;
+  clearedBadSession = true;
+  try {
+    Object.keys(localStorage)
+      .filter((k) => /^sb-.*-auth-token$/.test(k))
+      .forEach((k) => localStorage.removeItem(k));
+    console.warn("[supabase] cleared invalid session token", reason);
+    window.dispatchEvent(new CustomEvent("supabase:session-expired"));
+  } catch {}
+}
+
 function isRestRequest(url: string): boolean {
   return url.includes("/rest/v1/");
 }
@@ -81,6 +113,9 @@ async function appFetch(input: RequestInfo | URL, init?: RequestInit): Promise<R
     if (isRestRequest(url) && (await looksUnprovisioned(res))) {
       latchToLocalBackend("backend schema unavailable");
       return handleLocalRequest(input, init);
+    }
+    if (await looksLikeJwtFailure(res)) {
+      clearCorruptSession(url);
     }
     return res;
   } catch (err) {
