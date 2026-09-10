@@ -111,19 +111,6 @@ export default function Vendors() {
     })();
   }, [reloadKey]);
 
-  // Vendor counts per category — used for chip badges and to hide empty categories.
-  const countsByCategory = useMemo(() => {
-    const m: Record<string, number> = {};
-    for (const v of vendors) m[v.category] = (m[v.category] ?? 0) + 1;
-    return m;
-  }, [vendors]);
-
-  const countsByBand = useMemo(() => {
-    const m: Record<string, number> = {};
-    for (const v of vendors) m[v.price_band] = (m[v.price_band] ?? 0) + 1;
-    return m;
-  }, [vendors]);
-
   // If the user types an exact category name/alias, treat it as a category filter.
   const inferredCategory = useMemo(() => matchCategoryFromQuery(q), [q]);
 
@@ -157,6 +144,55 @@ export default function Vendors() {
       return true;
     });
   }, [vendors, q, categories, activeCategories, cities, bands, inferredCategory]);
+
+  // A vendor passes every currently active filter except the one facet being
+  // counted. This is what makes a chip's count answer "how many results does
+  // this option leave me, given what I've already picked" instead of the
+  // portfolio-wide total — a stale total is what invites a click into a
+  // combination (e.g. Venue + Abuja) that turns out to have zero results.
+  const matchesExcept = useCallback(
+    (v: Vendor, skip: "category" | "band") => {
+      const needle = q.trim().toLowerCase();
+      const querySatisfiedByInference = categories.length === 0 && inferredCategory !== null;
+      if (skip !== "category" && activeCategories.length > 0 && !activeCategories.includes(v.category)) return false;
+      if (cities.length > 0 && !cities.includes(v.city)) return false;
+      if (skip !== "band" && bands.length > 0 && !bands.includes(v.price_band)) return false;
+      if (needle && !querySatisfiedByInference) {
+        const aliases = CATEGORY_ALIASES[v.category] ?? [];
+        const matchesText =
+          v.name.toLowerCase().includes(needle) ||
+          (v.bio ?? "").toLowerCase().includes(needle) ||
+          v.city.toLowerCase().includes(needle) ||
+          v.category.replace(/_/g, " ").includes(needle) ||
+          aliases.some((a) => a.includes(needle));
+        if (!matchesText) return false;
+      }
+      return true;
+    },
+    [q, categories, activeCategories, cities, bands, inferredCategory],
+  );
+
+  // Vendor counts per category — used for chip badges and to hide empty
+  // categories. Computed against every OTHER active filter (city, price,
+  // search) so the number shown always reflects what selecting that category
+  // would actually return right now.
+  const countsByCategory = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const v of vendors) {
+      if (!matchesExcept(v, "category")) continue;
+      m[v.category] = (m[v.category] ?? 0) + 1;
+    }
+    return m;
+  }, [vendors, matchesExcept]);
+
+  const countsByBand = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const v of vendors) {
+      if (!matchesExcept(v, "band")) continue;
+      m[v.price_band] = (m[v.price_band] ?? 0) + 1;
+    }
+    return m;
+  }, [vendors, matchesExcept]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, Vendor[]>();

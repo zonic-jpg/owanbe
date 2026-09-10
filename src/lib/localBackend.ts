@@ -142,15 +142,28 @@ const MOCK_VENDOR_NAMES: Record<(typeof MOCK_CATEGORIES)[number], string[]> = {
   small_chops: ["Small Chops Express", "Chop House Lagos", "Party Bites NG"],
 };
 
+// A few hand-written vendor names already carry a city as part of the brand
+// (e.g. "Ankara House Lagos", "Cake Affairs Abuja", "Flora Haus Abuja"). If we
+// then append a *different* rotated city suffix, the listing contradicts
+// itself — a filter for "Abuja" can surface a vendor whose own name says
+// "Lagos". Detect an embedded city and let it win over the rotation so the
+// displayed name and the city field are always consistent.
+const MOCK_CITIES = ["Abuja", "Lagos"] as const;
+function embeddedCity(name: string): (typeof MOCK_CITIES)[number] | null {
+  return MOCK_CITIES.find((c) => name.includes(c)) ?? null;
+}
+
 function mockVendors(now: string): Row[] {
   return MOCK_CATEGORIES.map((category, i) => {
     const names = MOCK_VENDOR_NAMES[category];
     const name = names[i % names.length];
+    const city = embeddedCity(name) ?? (i % 3 === 0 ? "Abuja" : "Lagos");
+    const displayName = embeddedCity(name) ? name : `${name} — ${city}`;
     return {
       id: `mock-v-${String(i + 1).padStart(2, "0")}`,
-      name: `${name} — ${i % 3 === 0 ? "Abuja" : "Lagos"}`,
+      name: displayName,
       category,
-      city: i % 3 === 0 ? "Abuja" : "Lagos",
+      city,
       is_approved: true,
       price_band: i % 4 === 0 ? "premium" : "mid",
       rating: 4.2 + (i % 8) * 0.1,
