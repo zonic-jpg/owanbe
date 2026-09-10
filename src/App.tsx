@@ -39,30 +39,37 @@ const App = () => (
         <ErrorBoundary label="OwanbeX">
           <AuthProvider>
             <ShortlistProvider>
+              {/*
+                Each route gets its own boundary so a crash on one page shows
+                "Something went wrong in this section" for that page only —
+                ShortlistBar and SiteFooter below (part of the persistent
+                shell on every page) stay mounted and usable instead of the
+                whole app blanking to the single top-level fallback.
+              */}
               <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/login" element={<Auth />} />
-                <Route path="/privacy" element={<Legal page="privacy" />} />
-                <Route path="/terms" element={<Legal page="terms" />} />
-                <Route path="/contact" element={<Legal page="contact" />} />
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/events/new" element={<ProtectedRoute><EventNew /></ProtectedRoute>} />
-                <Route path="/events/:id" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
-                <Route path="/events/:id/analytics" element={<ProtectedRoute><EventAnalytics /></ProtectedRoute>} />
-                <Route path="/events/:id/guests" element={<ProtectedRoute><GuestList /></ProtectedRoute>} />
-                <Route path="/events/:id/aso-ebi" element={<ProtectedRoute><AsoEbi /></ProtectedRoute>} />
-                <Route path="/vendors" element={<Vendors />} />
-                <Route path="/vendors/:id" element={<VendorProfile />} />
-                <Route path="/shortlist" element={<ProtectedRoute><Shortlist /></ProtectedRoute>} />
-                <Route path="/brand/onboarding" element={<ProtectedRoute><BrandOnboarding /></ProtectedRoute>} />
-                <Route path="/brand" element={<ProtectedRoute><BrandDashboard /></ProtectedRoute>} />
+                <Route path="/" element={<ErrorBoundary label="Home"><Index /></ErrorBoundary>} />
+                <Route path="/auth" element={<ErrorBoundary label="Sign in"><Auth /></ErrorBoundary>} />
+                <Route path="/login" element={<ErrorBoundary label="Sign in"><Auth /></ErrorBoundary>} />
+                <Route path="/privacy" element={<ErrorBoundary label="Privacy"><Legal page="privacy" /></ErrorBoundary>} />
+                <Route path="/terms" element={<ErrorBoundary label="Terms"><Legal page="terms" /></ErrorBoundary>} />
+                <Route path="/contact" element={<ErrorBoundary label="Contact"><Legal page="contact" /></ErrorBoundary>} />
+                <Route path="/dashboard" element={<ProtectedRoute><ErrorBoundary label="Dashboard"><Dashboard /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/events/new" element={<ProtectedRoute><ErrorBoundary label="New event"><EventNew /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/events/:id" element={<ProtectedRoute><ErrorBoundary label="Event"><EventDetail /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/events/:id/analytics" element={<ProtectedRoute><ErrorBoundary label="Event analytics"><EventAnalytics /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/events/:id/guests" element={<ProtectedRoute><ErrorBoundary label="Guest list"><GuestList /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/events/:id/aso-ebi" element={<ProtectedRoute><ErrorBoundary label="Aso-ebi"><AsoEbi /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/vendors" element={<ErrorBoundary label="Vendors"><Vendors /></ErrorBoundary>} />
+                <Route path="/vendors/:id" element={<ErrorBoundary label="Vendor profile"><VendorProfile /></ErrorBoundary>} />
+                <Route path="/shortlist" element={<ProtectedRoute><ErrorBoundary label="Shortlist"><Shortlist /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/brand/onboarding" element={<ProtectedRoute><ErrorBoundary label="Brand onboarding"><BrandOnboarding /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/brand" element={<ProtectedRoute><ErrorBoundary label="Brand dashboard"><BrandDashboard /></ErrorBoundary></ProtectedRoute>} />
                 {/* The ONLY entry point that ever accepts the shared admin
                     password — never linked from any public nav/header/footer.
                     Reachable only by navigating to /admin directly. */}
-                <Route path="/admin" element={<AdminGate />} />
-                <Route path="/admin/users" element={<ProtectedRoute requireSuperAdmin><Admin /></ProtectedRoute>} />
-                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/admin" element={<ErrorBoundary label="Admin sign-in"><AdminGate /></ErrorBoundary>} />
+                <Route path="/admin/users" element={<ProtectedRoute requireSuperAdmin><ErrorBoundary label="Admin"><Admin /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><ErrorBoundary label="Profile"><Profile /></ErrorBoundary></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <ShortlistBar />

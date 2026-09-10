@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { loadAsoEbiDraft, saveAsoEbiDraft, clearAsoEbiDraft, type AsoEbiDraftForm } from "@/lib/aso-ebi-draft";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,9 +12,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { publicError } from "@/lib/publicMessage";
-import { ArrowLeft, BadgeCheck, Check, Crown, Loader2, MessageCircle, ShieldCheck, ShoppingBag, Sparkles, Star, Users } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Check, Crown, Loader2, MessageCircle, ShieldCheck, ShoppingBag, Sparkles, Star, Upload, Users } from "lucide-react";
 import { GateGuard } from "@/components/GateGuard";
 import { bestQuoteSavings, distributionStats, rankQuotes, rfqMessage, type QuoteRow } from "@/lib/aso-ebi";
+import { uploadCompressedImage } from "@/lib/image-upload";
+import { useAuth } from "@/contexts/AuthContext";
 import type { Database } from "@/integrations/supabase/types";
 
 type Campaign = Database["public"]["Tables"]["aso_ebi_campaigns"]["Row"];
@@ -25,6 +28,7 @@ const ngn = (n: number) => `₦${Number(n).toLocaleString()}`;
 
 function AsoEbiInner() {
   const { id: eventId } = useParams();
+  const { user } = useAuth();
   const [eventName, setEventName] = useState("Event");
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -34,7 +38,31 @@ function AsoEbiInner() {
   const [guests, setGuests] = useState<Array<{ id: string; name: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
-  const [draft, setDraft] = useState({ fabric_type: "", colors: "", qty_estimate: "", budget_per_unit: "", deadline: "", requirements: "" });
+  const defaultDraft: AsoEbiDraftForm = { fabric_type: "", colors: "", qty_estimate: "", budget_per_unit: "", deadline: "", requirements: "", swatch_url: "" };
+  // Restore an in-progress intake draft (if any) so a refresh before the
+  // campaign is opened doesn't discard what was typed. See aso-ebi-draft.ts.
+  const [draft, setDraft] = useState<AsoEbiDraftForm>(() => ({
+    ...defaultDraft,
+    ...(eventId ? loadAsoEbiDraft(eventId) : null),
+  }));
+  const [uploadingSwatch, setUploadingSwatch] = useState(false);
+
+  const onPickSwatch = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+    setUploadingSwatch(true);
+    try {
+      const path = `${user.id}/swatch-${Date.now()}.jpg`;
+      const result = await uploadCompressedImage(file, "aso-ebi-swatches", path, "Tablet");
+      setDraft((d) => ({ ...d, swatch_url: result.url }));
+      toast.success("Swatch photo uploaded");
+    } catch (err) {
+      toast.error("Couldn't upload that photo", { description: publicError(err, "Please try a different image.") });
+    } finally {
+      setUploadingSwatch(false);
+    }
+  };
   const [quoteDraft, setQuoteDraft] = useState({ provider_id: "", fabric: "", price_per_unit: "", min_order: "1", delivery_days: "", notes: "" });
   const [quoteOpen, setQuoteOpen] = useState(false);
 
@@ -71,6 +99,13 @@ function AsoEbiInner() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Autosave the intake draft on every change, until the campaign is opened
+  // (once `campaign` exists the draft form is no longer shown).
+  useEffect(() => {
+    if (!eventId || campaign) return;
+    saveAsoEbiDraft(eventId, draft);
+  }, [eventId, campaign, draft]);
+
   const createCampaign = async () => {
     if (!eventId) return;
     setBusy("create");
@@ -81,10 +116,12 @@ function AsoEbiInner() {
       qty_estimate: Number(draft.qty_estimate) || null,
       budget_per_unit: Number(draft.budget_per_unit) || null,
       deadline: draft.deadline || null, requirements: draft.requirements || null,
+      swatch_url: draft.swatch_url || null,
     }).select("*").single();
     setBusy(null);
     if (error) return toast.error("Could not open the campaign", { description: publicError(error) });
     setCampaign(data as Campaign);
+    clearAsoEbiDraft(eventId);
     toast.success("Aso-ebi campaign opened — now send your requirements to vetted providers");
   };
 
@@ -216,6 +253,16 @@ function AsoEbiInner() {
             </div>
             <Input type="date" value={draft.deadline} onChange={(e) => setDraft({ ...draft, deadline: e.target.value })} />
             <Textarea placeholder="Extra requirements (gele bundles, swatches first, sewing coordination…)" value={draft.requirements} onChange={(e) => setDraft({ ...draft, requirements: e.target.value })} />
+            <div className="flex items-center gap-3">
+              {draft.swatch_url && (
+                <img src={draft.swatch_url} alt="Fabric swatch preview" className="h-14 w-14 rounded-md object-cover border" />
+              )}
+              <label className="inline-flex items-center gap-2 text-xs text-muted-foreground border rounded-md px-3 py-2 cursor-pointer hover:bg-muted/50">
+                {uploadingSwatch ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                {uploadingSwatch ? "Uploading…" : draft.swatch_url ? "Replace swatch photo" : "Upload a fabric swatch photo (optional)"}
+                <input type="file" accept="image/*" className="hidden" disabled={uploadingSwatch} onChange={onPickSwatch} />
+              </label>
+            </div>
             <Button onClick={createCampaign} disabled={busy === "create"} className="w-full">
               {busy === "create" ? <Loader2 className="w-4 h-4 animate-spin" /> : "Open aso-ebi campaign"}
             </Button>
@@ -232,9 +279,18 @@ function AsoEbiInner() {
 
           {/* ── Vetted providers + one-tap WhatsApp RFQ ── */}
           <TabsContent value="providers" className="space-y-4 pt-4">
-            <p className="text-sm text-muted-foreground">
-              Your requirements are pre-written — tap WhatsApp on any provider and the full RFQ is in the message box. Record their replies in the quotes grid.
-            </p>
+            <div className="flex items-start gap-3">
+              {campaign.swatch_url && (
+                <img
+                  src={campaign.swatch_url}
+                  alt="Fabric swatch"
+                  className="h-16 w-16 rounded-md object-cover border shrink-0"
+                />
+              )}
+              <p className="text-sm text-muted-foreground">
+                Your requirements are pre-written — tap WhatsApp on any provider and the full RFQ is in the message box. Record their replies in the quotes grid.
+              </p>
+            </div>
             <div className="grid md:grid-cols-2 gap-4">
               {providers.map((p) => (
                 <Card key={p.id}>

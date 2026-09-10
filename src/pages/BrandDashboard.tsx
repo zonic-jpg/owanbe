@@ -12,6 +12,7 @@ import { Eye, Heart, MessageCircle, Mail, Phone, TrendingUp, Receipt, Calendar, 
 import { formatNaira } from "@/lib/format";
 import { BrandCatalogTab } from "@/components/BrandCatalogTab";
 import { BrandFunnelTab } from "@/components/BrandFunnelTab";
+import { VendorPortfolioManager } from "@/components/VendorPortfolioManager";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell, Legend,
@@ -35,6 +36,7 @@ export default function BrandDashboard() {
   const [subs, setSubs] = useState<Subscription[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [range, setRange] = useState<Range>("30d");
+  const [openPortfolioFor, setOpenPortfolioFor] = useState<string | null>(null);
 
   useEffect(() => { document.title = "Brand dashboard — OwanbeX"; }, []);
 
@@ -108,9 +110,14 @@ export default function BrandDashboard() {
     <AppShell>
       <div className="container py-6 md:py-10 space-y-6">
         <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-          <div>
-            <h1 className="font-display text-3xl md:text-4xl">{brand?.name ?? "Brand dashboard"}</h1>
-            <p className="text-muted-foreground">Insights, subscription and billing for your brand.</p>
+          <div className="flex items-center gap-3">
+            {brand?.logo_url && (
+              <img src={brand.logo_url} alt={`${brand.name} logo`} className="h-12 w-12 rounded-lg object-cover border" />
+            )}
+            <div>
+              <h1 className="font-display text-3xl md:text-4xl">{brand?.name ?? "Brand dashboard"}</h1>
+              <p className="text-muted-foreground">Insights, subscription and billing for your brand.</p>
+            </div>
           </div>
           {brand && <Badge variant="secondary" className="capitalize">{brand.status.replace("_", " ")}</Badge>}
         </header>
@@ -177,12 +184,23 @@ export default function BrandDashboard() {
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {vendors.map((v) => (
                       <Card key={v.id}>
-                        <CardContent className="p-4 space-y-1">
+                        <CardContent className="p-4 space-y-2">
                           <div className="font-medium">{v.name}</div>
                           <div className="text-xs text-muted-foreground capitalize">{v.category.replace(/_/g, " ")}</div>
-                          <Button variant="link" size="sm" asChild className="px-0 h-auto">
-                            <Link to={`/vendors/${v.id}`}>View public profile <ExternalLink className="h-3 w-3 ml-1" /></Link>
-                          </Button>
+                          <div className="flex items-center gap-3">
+                            <Button variant="link" size="sm" asChild className="px-0 h-auto">
+                              <Link to={`/vendors/${v.id}`}>View public profile <ExternalLink className="h-3 w-3 ml-1" /></Link>
+                            </Button>
+                            <Button
+                              variant="link" size="sm" className="px-0 h-auto"
+                              onClick={() => setOpenPortfolioFor((cur) => (cur === v.id ? null : v.id))}
+                            >
+                              {openPortfolioFor === v.id ? "Hide portfolio" : "Manage portfolio"}
+                            </Button>
+                          </div>
+                          {openPortfolioFor === v.id && (
+                            <VendorPortfolioManager vendorId={v.id} vendorName={v.name} />
+                          )}
                         </CardContent>
                       </Card>
                     ))}

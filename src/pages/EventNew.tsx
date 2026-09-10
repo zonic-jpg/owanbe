@@ -12,10 +12,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, ArrowLeft, ArrowRight, Calendar, MapPin, Users, Wallet, Palette } from "lucide-react";
+import { Loader2, Sparkles, ArrowLeft, ArrowRight, Calendar, MapPin, Users, Wallet, Palette, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { track as zonicTrack } from "@/lib/zonic-track";
 import { formatNairaCompact } from "@/lib/format";
+import { publicError } from "@/lib/publicMessage";
+import { loadEventDraft, saveEventDraft, clearEventDraft, type EventDraftForm } from "@/lib/event-draft";
+import { uploadCompressedImage } from "@/lib/image-upload";
 
 type EventType = "wedding" | "birthday" | "burial" | "housewarming" | "chieftaincy" | "anniversary" | "naming" | "other";
 
@@ -47,17 +50,43 @@ const schema = z.object({
 function EventNewInner() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
-  const [saving, setSaving] = useState(false);
-  const [colors, setColors] = useState<string[]>([]);
-  const [form, setForm] = useState({
-    name: "", type: "wedding" as EventType, city: "Lagos", event_date: "",
+  const defaultForm: EventDraftForm = {
+    name: "", type: "wedding", city: "Lagos", event_date: "",
     guest_count: 200, budget_min: 5_000_000, budget_max: 15_000_000,
-    vibe: "", notes: "",
-  });
+    vibe: "", notes: "", cover_url: "",
+  };
+  // Restore an in-progress draft (if any) so a refresh mid-wizard doesn't
+  // discard what the user already entered. See src/lib/event-draft.ts.
+  const [step, setStep] = useState(() => loadEventDraft()?.step ?? 1);
+  const [saving, setSaving] = useState(false);
+  const [colors, setColors] = useState<string[]>(() => loadEventDraft()?.colors ?? []);
+  const [form, setForm] = useState<EventDraftForm>(() => ({ ...defaultForm, ...loadEventDraft()?.form }));
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [uploadingCover, setUploadingCover] = useState(false);
+
+  const onPickCover = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+    setUploadingCover(true);
+    try {
+      const path = `${user.id}/event-cover-${Date.now()}.jpg`;
+      const result = await uploadCompressedImage(file, "event-covers", path, "Desktop");
+      setForm((f) => ({ ...f, cover_url: result.url }));
+      toast.success("Cover photo uploaded");
+    } catch (err) {
+      toast.error("Couldn't upload that photo", { description: publicError(err, "Please try a different image.") });
+    } finally {
+      setUploadingCover(false);
+    }
+  };
 
   useEffect(() => { document.title = "New event — Owanbe Planner"; }, []);
+
+  // Autosave the draft on every change — non-fatal if storage is unavailable.
+  useEffect(() => {
+    saveEventDraft({ step, form, colors });
+  }, [step, form, colors]);
 
   if (!user) return null;
 
@@ -107,14 +136,20 @@ function EventNewInner() {
       vibe: d.vibe || null,
       colors: colors.length ? colors : null,
       notes: d.notes || null,
+      cover_url: form.cover_url || null,
       status: "draft",
     }).select("id").single();
     setSaving(false);
-    if (error || !data) return toast.error(error?.message ?? "Failed to create event");
+    if (error || !data) {
+      return toast.error("Failed to create event", {
+        description: publicError(error, "We couldn't create your event. Please try again."),
+      });
+    }
     zonicTrack("event.created", {
       entity: { type: "event", id: data.id },
       properties: { type: d.type, city: d.city, guest_count: d.guest_count },
     });
+    clearEventDraft();
     toast.success("Event created");
     navigate(`/events/${data.id}`);
   };
@@ -230,6 +265,19 @@ function EventNewInner() {
             {step === 4 && (
               <>
                 <div className="space-y-1.5">
+                  <Label>Cover photo (optional)</Label>
+                  <div className="flex items-center gap-3">
+                    {form.cover_url && (
+                      <img src={form.cover_url} alt="Event cover preview" className="h-16 w-16 rounded-lg object-cover border" />
+                    )}
+                    <label className="inline-flex items-center gap-2 text-xs text-muted-foreground border rounded-md px-3 py-2 cursor-pointer hover:bg-muted/50">
+                      {uploadingCover ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                      {uploadingCover ? "Uploading…" : form.cover_url ? "Replace photo" : "Upload a cover photo"}
+                      <input type="file" accept="image/*" className="hidden" disabled={uploadingCover} onChange={onPickCover} />
+                    </label>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
                   <Label htmlFor="vibe">Vibe (optional)</Label>
                   <Textarea id="vibe" rows={2} value={form.vibe} maxLength={500}
                     onChange={(e) => setForm({ ...form, vibe: e.target.value })}
@@ -272,7 +320,7 @@ function EventNewInner() {
         </Card>
 
         <div className="flex justify-between gap-2">
-          <Button variant="ghost" onClick={step === 1 ? () => navigate("/dashboard") : back} disabled={saving}>
+          <Button variant="ghost" onClick={step === 1 ? () => { clearEventDraft(); navigate("/dashboard"); } : back} disabled={saving}>
             <ArrowLeft className="h-4 w-4 mr-2" /> {step === 1 ? "Cancel" : "Back"}
           </Button>
           {step < 4 ? (

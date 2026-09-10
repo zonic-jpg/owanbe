@@ -140,11 +140,24 @@ function DashboardInner() {
 }
 
 function EventCard({ ev }: { ev: import("@/integrations/supabase/types").Database["public"]["Tables"]["events"]["Row"] }) {
+  const [coverBroken, setCoverBroken] = useState(false);
+  const hasCover = !!ev.cover_url && !coverBroken;
   return (
     <Link to={`/events/${ev.id}`}>
       <Card className="overflow-hidden group hover:shadow-elegant hover:border-primary/40 transition-all hover:-translate-y-1">
         <div className="relative h-32 bg-gradient-luxe overflow-hidden">
-          <div className="absolute inset-0 ankara-divider opacity-20" />
+          {hasCover ? (
+            <img
+              src={ev.cover_url ?? undefined}
+              alt=""
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover"
+              onError={() => setCoverBroken(true)}
+            />
+          ) : (
+            <div className="absolute inset-0 ankara-divider opacity-20" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
           <div className="absolute inset-0 flex items-end p-4">
             <div className="font-display text-2xl font-bold text-white capitalize truncate">{ev.name}</div>
           </div>

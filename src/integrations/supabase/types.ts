@@ -15,9 +15,9 @@ export type Database = {
   public: {
     Tables: {
       aso_ebi_campaigns: {
-        Row: { id: string; event_id: string; owner_id: string; title: string; fabric_type: string | null; colors: string | null; qty_estimate: number | null; budget_per_unit: number | null; requirements: string | null; deadline: string | null; status: string; created_at: string }
-        Insert: { id?: string; event_id: string; owner_id: string; title?: string; fabric_type?: string | null; colors?: string | null; qty_estimate?: number | null; budget_per_unit?: number | null; requirements?: string | null; deadline?: string | null; status?: string; created_at?: string }
-        Update: { id?: string; event_id?: string; owner_id?: string; title?: string; fabric_type?: string | null; colors?: string | null; qty_estimate?: number | null; budget_per_unit?: number | null; requirements?: string | null; deadline?: string | null; status?: string; created_at?: string }
+        Row: { id: string; event_id: string; owner_id: string; title: string; fabric_type: string | null; colors: string | null; qty_estimate: number | null; budget_per_unit: number | null; requirements: string | null; deadline: string | null; status: string; swatch_url: string | null; created_at: string }
+        Insert: { id?: string; event_id: string; owner_id: string; title?: string; fabric_type?: string | null; colors?: string | null; qty_estimate?: number | null; budget_per_unit?: number | null; requirements?: string | null; deadline?: string | null; status?: string; swatch_url?: string | null; created_at?: string }
+        Update: { id?: string; event_id?: string; owner_id?: string; title?: string; fabric_type?: string | null; colors?: string | null; qty_estimate?: number | null; budget_per_unit?: number | null; requirements?: string | null; deadline?: string | null; status?: string; swatch_url?: string | null; created_at?: string }
         Relationships: []
       }
       aso_ebi_guest_orders: {
@@ -768,6 +768,7 @@ export type Database = {
           budget_mode: Database["public"]["Enums"]["budget_mode"] | null
           city: string
           colors: string[] | null
+          cover_url: string | null
           created_at: string
           event_date: string | null
           guest_count: number
@@ -787,6 +788,7 @@ export type Database = {
           budget_mode?: Database["public"]["Enums"]["budget_mode"] | null
           city?: string
           colors?: string[] | null
+          cover_url?: string | null
           created_at?: string
           event_date?: string | null
           guest_count?: number
@@ -806,6 +808,7 @@ export type Database = {
           budget_mode?: Database["public"]["Enums"]["budget_mode"] | null
           city?: string
           colors?: string[] | null
+          cover_url?: string | null
           created_at?: string
           event_date?: string | null
           guest_count?: number

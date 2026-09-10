@@ -9,9 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Star, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Star, Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { CsvImport } from "./CsvImport";
+import { publicError } from "@/lib/publicMessage";
+import { uploadCompressedImage } from "@/lib/image-upload";
 
 const CATEGORIES = ["decor","catering","photography","dj","mc","makeup","aso_ebi","cake","venue","drinks","security","logistics","souvenirs","planner","florist","videographer","hair_stylist","bridal_wear","gele","lighting_av","transport","stationery","rentals","bar_service","groom_attire","jewellery","small_chops","dessert_table","photo_booth","fireworks","kids_entertainment","alaga","proposal_planner"] as const;
 const PRICE_BANDS = ["affordable","mid","premium","luxury"] as const;
@@ -36,6 +38,7 @@ export function VendorsAdmin() {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState("");
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -59,6 +62,28 @@ export function VendorsAdmin() {
     if (error) return toast.error(error.message);
     toast.success(editing.id ? "Vendor updated" : "Vendor created");
     setOpen(false); setEditing(null); load();
+  };
+
+  const onPickCoverFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !editing) return;
+    setUploadingCover(true);
+    try {
+      // Resized/compressed client-side (see resizeForDevices) before it ever
+      // reaches storage — the grid card and this admin thumbnail both read
+      // the same cover_url, so an uncompressed original would ship its full
+      // multi-MB size to every thumbnail that reuses it.
+      const vendorKey = editing.id ?? crypto.randomUUID();
+      const path = `vendor/${vendorKey}/cover-${Date.now()}.jpg`;
+      const result = await uploadCompressedImage(file, "vendor-covers", path, "Desktop");
+      setEditing((cur) => (cur ? { ...cur, cover_url: result.url } : cur));
+      toast.success(`Cover uploaded (${result.width}×${result.height} · ${result.kb}KB)`);
+    } catch (err) {
+      toast.error("Couldn't upload that image", { description: publicError(err, "Please try a different image.") });
+    } finally {
+      setUploadingCover(false);
+    }
   };
 
   const remove = async (id: string) => {
@@ -173,7 +198,20 @@ export function VendorsAdmin() {
               </div>
               <div><Label>WhatsApp</Label><Input value={editing.whatsapp ?? ""} onChange={(e) => setEditing({ ...editing, whatsapp: e.target.value })} /></div>
               <div><Label>Contact email</Label><Input type="email" value={editing.contact_email ?? ""} onChange={(e) => setEditing({ ...editing, contact_email: e.target.value })} /></div>
-              <div className="sm:col-span-2"><Label>Cover image URL</Label><Input value={editing.cover_url ?? ""} onChange={(e) => setEditing({ ...editing, cover_url: e.target.value })} /></div>
+              <div className="sm:col-span-2 space-y-2">
+                <Label>Cover image</Label>
+                <Input value={editing.cover_url ?? ""} placeholder="https://…" onChange={(e) => setEditing({ ...editing, cover_url: e.target.value })} />
+                <div className="flex items-center gap-3">
+                  {editing.cover_url && (
+                    <img src={editing.cover_url} alt="Cover preview" className="h-14 w-14 rounded-md object-cover border" />
+                  )}
+                  <label className="inline-flex items-center gap-2 text-xs text-muted-foreground border rounded-md px-3 py-2 cursor-pointer hover:bg-muted/50">
+                    {uploadingCover ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                    {uploadingCover ? "Uploading & compressing…" : "Upload a file instead"}
+                    <input type="file" accept="image/*" className="hidden" disabled={uploadingCover} onChange={onPickCoverFile} />
+                  </label>
+                </div>
+              </div>
               <div className="sm:col-span-2"><Label>Bio</Label><Textarea rows={3} value={editing.bio ?? ""} onChange={(e) => setEditing({ ...editing, bio: e.target.value })} /></div>
               <div className="flex items-center justify-between rounded-md border p-3"><Label>Approved (visible)</Label><Switch checked={!!editing.is_approved} onCheckedChange={(v) => setEditing({ ...editing, is_approved: v })} /></div>
               <div className="flex items-center justify-between rounded-md border p-3"><Label>Sponsored</Label><Switch checked={!!editing.is_sponsored} onCheckedChange={(v) => setEditing({ ...editing, is_sponsored: v })} /></div>

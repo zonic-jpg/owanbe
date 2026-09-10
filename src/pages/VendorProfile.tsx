@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { tintFor } from "@/lib/vendor-covers";
 import { CoverImage } from "@/components/CoverImage";
+import { ImageWithFallback } from "@/components/ImageWithFallback";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ShortlistButton } from "@/components/ShortlistButton";
 import { trackVendorEvent } from "@/lib/analytics-track";
 
@@ -258,6 +260,7 @@ export default function VendorProfile() {
             </Card>
 
             {/* Portfolio */}
+            <ErrorBoundary label="Portfolio">
             <Card>
               <CardHeader>
                 <CardTitle>Portfolio {portfolio.length > 0 && <span className="text-muted-foreground font-normal">({portfolio.length})</span>}</CardTitle>
@@ -273,7 +276,7 @@ export default function VendorProfile() {
                         onClick={() => setLightbox(item.image_url)}
                         className="group relative aspect-square overflow-hidden rounded-lg border bg-muted"
                       >
-                        <img
+                        <ImageWithFallback
                           src={item.image_url}
                           alt={item.caption ?? `${vendor.name} portfolio`}
                           loading="lazy"
@@ -290,8 +293,10 @@ export default function VendorProfile() {
                 )}
               </CardContent>
             </Card>
+            </ErrorBoundary>
 
             {/* Reviews */}
+            <ErrorBoundary label="Reviews">
             <Card>
               <CardHeader>
                 <CardTitle>Reviews</CardTitle>
@@ -359,10 +364,12 @@ export default function VendorProfile() {
                 )}
               </CardContent>
             </Card>
+            </ErrorBoundary>
           </div>
 
           {/* Right column */}
           <div className="space-y-6">
+            <ErrorBoundary label="Contact">
             <Card>
               <CardHeader><CardTitle>Contact</CardTitle></CardHeader>
               <CardContent className="space-y-3">
@@ -394,7 +401,9 @@ export default function VendorProfile() {
                 )}
               </CardContent>
             </Card>
+            </ErrorBoundary>
 
+            <ErrorBoundary label="Availability">
             <Card>
               <CardHeader><CardTitle>Availability</CardTitle></CardHeader>
               <CardContent>
@@ -414,6 +423,7 @@ export default function VendorProfile() {
                 )}
               </CardContent>
             </Card>
+            </ErrorBoundary>
           </div>
         </div>
       </div>
@@ -424,7 +434,7 @@ export default function VendorProfile() {
           className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out"
           onClick={() => setLightbox(null)}
         >
-          <img src={lightbox} alt="Portfolio detail" className="max-h-full max-w-full object-contain rounded-lg shadow-2xl" />
+          <ImageWithFallback src={lightbox} alt="Portfolio detail" className="max-h-full max-w-full object-contain rounded-lg shadow-2xl" />
         </div>
       )}
     </AppShell>

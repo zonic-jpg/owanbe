@@ -14,10 +14,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, CheckCircle2, Building2, CreditCard, Send, Crown, Tag, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle2, Building2, CreditCard, Send, Crown, Tag, AlertCircle, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { publicError } from "@/lib/publicMessage";
 import { BRAND_PLANS, type BrandPlanId } from "@/lib/brand-plans";
 import { formatNaira } from "@/lib/format";
+import { uploadCompressedImage } from "@/lib/image-upload";
 
 const brandSchema = z.object({
   name: z.string().trim().min(2, "Brand name required").max(120),
@@ -79,7 +81,7 @@ export default function BrandOnboarding() {
       const r = await verifyPaymentReturn();
       if (!r) return;
       if (r.ok) { toast.success("Payment confirmed — your plan is now active."); zonicTrack("purchase", { entity: { type: "brand_subscription" } }); }
-      else toast.error(r.error ?? "We couldn't confirm that payment.");
+      else toast.error(publicError(r.error, "We couldn't confirm that payment."));
       window.history.replaceState({}, "", "/brand/onboarding");
       await load();
     })();
@@ -176,8 +178,27 @@ function BrandForm({ brand, onSaved }: { brand: Brand | null; onSaved: () => Pro
     website: brand?.website ?? "",
     bio: brand?.bio ?? "",
   });
+  const [logoUrl, setLogoUrl] = useState(brand?.logo_url ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+
+  const onPickLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+    setUploadingLogo(true);
+    try {
+      const path = `${user.id}/logo-${Date.now()}.jpg`;
+      const result = await uploadCompressedImage(file, "brand-logos", path, "Mobile");
+      setLogoUrl(result.url);
+      toast.success("Logo uploaded");
+    } catch (err) {
+      toast.error("Couldn't upload that logo", { description: publicError(err, "Please try a different image.") });
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
 
   const editable = !brand || brand.status === "draft" || brand.status === "rejected" || brand.status === "awaiting_payment";
 
@@ -200,14 +221,15 @@ function BrandForm({ brand, onSaved }: { brand: Brand | null; onSaved: () => Pro
       contact_phone: d.contact_phone || null,
       website: d.website || null,
       bio: d.bio || null,
+      logo_url: logoUrl || null,
     };
     if (brand) {
       const { error } = await supabase.from("brands").update(payload).eq("id", brand.id);
-      if (error) { toast.error(error.message); setSaving(false); return; }
+      if (error) { toast.error("Couldn't save your brand", { description: publicError(error) }); setSaving(false); return; }
       toast.success("Brand updated");
     } else {
       const { error } = await supabase.from("brands").insert([{ ...payload, owner_id: user.id, status: "awaiting_payment" }]);
-      if (error) { toast.error(error.message); setSaving(false); return; }
+      if (error) { toast.error("Couldn't create your brand", { description: publicError(error) }); setSaving(false); return; }
       toast.success("Brand created");
     }
     setSaving(false);
@@ -217,6 +239,9 @@ function BrandForm({ brand, onSaved }: { brand: Brand | null; onSaved: () => Pro
   if (brand && !editable) {
     return (
       <div className="space-y-2 text-sm">
+        {brand.logo_url && (
+          <img src={brand.logo_url} alt={`${brand.name} logo`} className="h-14 w-14 rounded-lg object-cover border mb-2" />
+        )}
         <div><span className="text-muted-foreground">Name:</span> <span className="font-medium">{brand.name}</span></div>
         <div><span className="text-muted-foreground">Email:</span> {brand.contact_email}</div>
         {brand.website && <div><span className="text-muted-foreground">Website:</span> {brand.website}</div>}
@@ -227,6 +252,16 @@ function BrandForm({ brand, onSaved }: { brand: Brand | null; onSaved: () => Pro
 
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
+      <Field label="Brand logo (optional)" id="b-logo">
+        <div className="flex items-center gap-3">
+          {logoUrl && <img src={logoUrl} alt="Logo preview" className="h-14 w-14 rounded-lg object-cover border" />}
+          <label className="inline-flex items-center gap-2 text-xs text-muted-foreground border rounded-md px-3 py-2 cursor-pointer hover:bg-muted/50">
+            {uploadingLogo ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+            {uploadingLogo ? "Uploading…" : logoUrl ? "Replace logo" : "Upload a logo"}
+            <input id="b-logo" type="file" accept="image/*" className="hidden" disabled={uploadingLogo} onChange={onPickLogo} />
+          </label>
+        </div>
+      </Field>
       <Field label="Brand name" id="b-name" error={errors.name}>
         <Input id="b-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} maxLength={120} required />
       </Field>
@@ -301,7 +336,7 @@ function PlanPicker({ brand, sub, onChange }: { brand: Brand; sub: Subscription 
     setBusy("waiver");
     const { data, error } = await supabase.rpc("apply_waiver_to_brand", { _brand: brand.id, _code: code || null });
     setBusy(null);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error("Couldn't check waiver", { description: publicError(error) });
     if (!data) return toast.error("No matching waiver found for your brand name, email, or code.");
     toast.success("Waiver applied — you can skip payment.");
     await onChange();
@@ -315,14 +350,14 @@ function PlanPicker({ brand, sub, onChange }: { brand: Brand; sub: Subscription 
       brand_id: brand.id, plan: planId, status: "active",
       amount: plan.price, period_end: periodEnd,
     }).select("id").single();
-    if (subErr) { setBusy(null); return toast.error(subErr.message); }
+    if (subErr) { setBusy(null); return toast.error("Couldn't record that payment", { description: publicError(subErr) }); }
     const { error: payErr } = await supabase.from("brand_payments").insert({
       brand_id: brand.id, subscription_id: subRow.id, amount: plan.price,
       status: "succeeded", method: "mock", external_ref: `MOCK-${Date.now()}`,
       paid_at: new Date().toISOString(),
     });
     setBusy(null);
-    if (payErr) return toast.error(payErr.message);
+    if (payErr) return toast.error("Couldn't record that payment", { description: publicError(payErr) });
     toast.success(`Payment of ${formatNaira(plan.price)} recorded (mock)`);
     await onChange();
   };
@@ -340,12 +375,12 @@ function PlanPicker({ brand, sub, onChange }: { brand: Brand; sub: Subscription 
       });
       // On success the browser redirects to the gateway and back.
     } catch (e) {
-      const msg = e?.message ?? "Could not start payment";
+      const msg = e instanceof Error ? e.message : String(e);
       if (import.meta.env.DEV && /not configured|provider/i.test(msg)) {
         await mockPay(planId);
         return;
       }
-      toast.error(msg);
+      toast.error("Could not start payment", { description: publicError(e, "Could not start payment. Please try again.") });
       setBusy(null);
     }
   };
@@ -420,7 +455,7 @@ function SubmitBlock({ brand, canSubmit, onChange }: { brand: Brand; canSubmit: 
     setBusy(true);
     const { error } = await supabase.rpc("request_brand_approval", { _brand: brand.id });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error("Couldn't submit for approval", { description: publicError(error) });
     toast.success("Submitted for approval");
     await onChange();
   };

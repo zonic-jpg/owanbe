@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { resizeForDevices, type SizedImage } from "@/lib/responsive-image";
+import { uploadCompressedImage } from "@/lib/image-upload";
+import { publicError } from "@/lib/publicMessage";
 
 /**
  * Visual content editor for the public pages.
@@ -63,14 +65,23 @@ export function ContentStudio() {
 
   const onPickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
     setBusy(true);
     try {
+      // Compressed client-side and uploaded to Storage — the URL is what
+      // gets saved in site_content.data, not the image bytes. Previously
+      // this stored the raw desktop-rendition data: URL inline in the jsonb
+      // column, i.e. a base64 blob in the database rather than object
+      // storage (the opposite of what this file's resizeForDevices import
+      // is meant to enable elsewhere in the app).
       const out = await resizeForDevices(file);
       setSizes(out);
-      set("heroImage", out[out.length - 1].dataUrl); // desktop rendition for preview
-    } catch {
-      toast.error("Could not process that image");
+      const path = `hero/${Date.now()}.jpg`;
+      const uploaded = await uploadCompressedImage(file, "site-content", path, "Desktop");
+      set("heroImage", uploaded.url);
+    } catch (err) {
+      toast.error("Could not process that image", { description: publicError(err, "Please try a different image.") });
     } finally {
       setBusy(false);
     }

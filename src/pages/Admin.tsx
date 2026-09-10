@@ -26,6 +26,7 @@ import { AdminTesterQueue } from "@/components/admin/AdminTesterQueue";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 type AdminTab = {
   value: string;
@@ -122,27 +123,29 @@ export default function Admin() {
             ))}
           </TabsList>
 
-          <TabsContent value="datamode"><DataModeAdmin /></TabsContent>
-          <TabsContent value="landing"><LandingContentAdmin /></TabsContent>
-          {isSuperAdmin && <TabsContent value="studio"><ContentStudio /></TabsContent>}
-          <TabsContent value="brands"><BrandApprovalsAdmin /></TabsContent>
-          {canViewFinancials && <TabsContent value="financials"><FinancialsAdmin /></TabsContent>}
-          {canViewFinancials && <TabsContent value="costs"><CostsAdmin /></TabsContent>}
-          {canGrantWaivers && <TabsContent value="waivers"><WaiversAdmin /></TabsContent>}
-          <TabsContent value="vendors"><VendorsAdmin /></TabsContent>
-          <TabsContent value="catalog"><CatalogAdmin /></TabsContent>
-          <TabsContent value="pricing"><PricingAdmin /></TabsContent>
-          <TabsContent value="sponsors"><SponsorsAdmin /></TabsContent>
-          <TabsContent value="tiers"><TiersAdmin /></TabsContent>
-          {isSuperAdmin && <TabsContent value="gates"><PaymentGatesAdmin /></TabsContent>}
-          {isSuperAdmin && <TabsContent value="users"><UsersAdmin /></TabsContent>}
-          {isSuperAdmin && <TabsContent value="perms"><AdminPermsAdmin /></TabsContent>}
-          <TabsContent value="audit"><AuditLog /></TabsContent>
-          <TabsContent value="covers"><CoverJobsAdmin /></TabsContent>
-          <TabsContent value="cover-status"><VendorCoverStatusAdmin /></TabsContent>
-          <TabsContent value="cover-review"><CoverReviewAdmin /></TabsContent>
-          <TabsContent value="cities"><CitiesAdmin /></TabsContent>
-          <TabsContent value="404s"><NotFoundLogsAdmin /></TabsContent>
+          {/* Each panel gets its own boundary — one admin tab throwing must
+              not take out every other tab's Tabs/TabsList shell along with it. */}
+          <TabsContent value="datamode"><ErrorBoundary label="Data mode"><DataModeAdmin /></ErrorBoundary></TabsContent>
+          <TabsContent value="landing"><ErrorBoundary label="Landing content"><LandingContentAdmin /></ErrorBoundary></TabsContent>
+          {isSuperAdmin && <TabsContent value="studio"><ErrorBoundary label="Content studio"><ContentStudio /></ErrorBoundary></TabsContent>}
+          <TabsContent value="brands"><ErrorBoundary label="Brand approvals"><BrandApprovalsAdmin /></ErrorBoundary></TabsContent>
+          {canViewFinancials && <TabsContent value="financials"><ErrorBoundary label="Financials"><FinancialsAdmin /></ErrorBoundary></TabsContent>}
+          {canViewFinancials && <TabsContent value="costs"><ErrorBoundary label="Costs"><CostsAdmin /></ErrorBoundary></TabsContent>}
+          {canGrantWaivers && <TabsContent value="waivers"><ErrorBoundary label="Waivers"><WaiversAdmin /></ErrorBoundary></TabsContent>}
+          <TabsContent value="vendors"><ErrorBoundary label="Vendors"><VendorsAdmin /></ErrorBoundary></TabsContent>
+          <TabsContent value="catalog"><ErrorBoundary label="Catalog"><CatalogAdmin /></ErrorBoundary></TabsContent>
+          <TabsContent value="pricing"><ErrorBoundary label="Pricing"><PricingAdmin /></ErrorBoundary></TabsContent>
+          <TabsContent value="sponsors"><ErrorBoundary label="Sponsors"><SponsorsAdmin /></ErrorBoundary></TabsContent>
+          <TabsContent value="tiers"><ErrorBoundary label="Tiers"><TiersAdmin /></ErrorBoundary></TabsContent>
+          {isSuperAdmin && <TabsContent value="gates"><ErrorBoundary label="Payment gates"><PaymentGatesAdmin /></ErrorBoundary></TabsContent>}
+          {isSuperAdmin && <TabsContent value="users"><ErrorBoundary label="Users"><UsersAdmin /></ErrorBoundary></TabsContent>}
+          {isSuperAdmin && <TabsContent value="perms"><ErrorBoundary label="Admin perms"><AdminPermsAdmin /></ErrorBoundary></TabsContent>}
+          <TabsContent value="audit"><ErrorBoundary label="Audit log"><AuditLog /></ErrorBoundary></TabsContent>
+          <TabsContent value="covers"><ErrorBoundary label="Cover jobs"><CoverJobsAdmin /></ErrorBoundary></TabsContent>
+          <TabsContent value="cover-status"><ErrorBoundary label="Cover status"><VendorCoverStatusAdmin /></ErrorBoundary></TabsContent>
+          <TabsContent value="cover-review"><ErrorBoundary label="Cover review"><CoverReviewAdmin /></ErrorBoundary></TabsContent>
+          <TabsContent value="cities"><ErrorBoundary label="Cities"><CitiesAdmin /></ErrorBoundary></TabsContent>
+          <TabsContent value="404s"><ErrorBoundary label="404 logs"><NotFoundLogsAdmin /></ErrorBoundary></TabsContent>
         </Tabs>
       </div>
     </AppShell>
